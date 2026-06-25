@@ -1,0 +1,374 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { getReports, saveReports, getBilling } from '../lib/storage';
+import { getStatusColor } from '../lib/constants';
+import type { Report, ReportStatus } from '../lib/types';
+
+type ProfilModal = 'notifikasi' | 'pengaturan' | 'bantuan' | null;
+
+export default function ProfilPage() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [activeModal, setActiveModal] = useState<ProfilModal>(null);
+  const [adminCode, setAdminCode] = useState('');
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [pushNotif, setPushNotif] = useState(true);
+  const [emailNotif, setEmailNotif] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  useEffect(() => {
+    setReports(getReports());
+  }, []);
+
+  const counts = useMemo(() => ({
+    all: reports.length,
+    done: reports.filter((r) => r.status === 'Selesai').length,
+    process: reports.filter((r) => r.status === 'Diproses').length,
+  }), [reports]);
+
+  const notifications = useMemo(() => {
+    return reports.filter((r) => r.status !== 'Terkirim').map((r) => ({
+      ticket: r.ticket,
+      title: r.title,
+      status: r.status,
+      date: r.createdAt,
+    }));
+  }, [reports]);
+
+  function adminLogin() {
+    if (adminCode.trim() !== 'admin123') {
+      window.alert('Kode admin salah.');
+      setAdminLoggedIn(false);
+      return;
+    }
+    setAdminLoggedIn(true);
+  }
+
+  function updateStatus(ticket: string, status: ReportStatus) {
+    const next = reports.map((r) => r.ticket === ticket ? { ...r, status } : r);
+    saveReports(next);
+    setReports(next);
+  }
+
+  function deleteReport(ticket: string) {
+    if (!window.confirm('Hapus laporan ini?')) return;
+    const next = reports.filter((r) => r.ticket !== ticket);
+    saveReports(next);
+    setReports(next);
+  }
+
+  function clearAllData() {
+    if (!window.confirm('Hapus semua data laporan? Tindakan ini tidak dapat dibatalkan.')) return;
+    saveReports([]);
+    setReports([]);
+    window.alert('Semua data laporan telah dihapus.');
+  }
+
+  const faqItems = [
+    { q: 'Bagaimana cara membuat laporan?', a: 'Klik tombol "➕ Lapor" di navigasi bawah, pilih kategori, isi form, lalu klik "Kirim Laporan".' },
+    { q: 'Bagaimana cara melacak laporan?', a: 'Buka halaman "📊 Riwayat" untuk melihat semua laporan dan statusnya. Anda juga bisa mencari berdasarkan nomor tiket.' },
+    { q: 'Berapa lama proses penanganan?', a: 'Biasanya 1-3 hari kerja tergantung urgensi dan kompleksitas masalah.' },
+    { q: 'Apakah laporan anonim bisa ditindaklanjuti?', a: 'Laporan anonim tetap dicatat, namun kami tidak dapat menghubungi Anda untuk klarifikasi.' },
+    { q: 'Bagaimana jika laporan saya ditolak?', a: 'Laporan ditolak jika tidak sesuai kategori atau duplikat. Silakan buat laporan baru dengan data yang lebih lengkap.' },
+  ];
+
+  return (
+    <>
+      {/* Page Banner */}
+      <div className="layanan-banner">
+        <div className="profile-avatar" style={{width:80,height:80,fontSize:40,margin:'0 auto 16px'}}>M</div>
+        <div className="layanan-banner-content" style={{textAlign:'center'}}>
+          <h1>Mahasiswa</h1>
+          <p>NIM: 12345678 • Teknik Informatika</p>
+        </div>
+        <div className="layanan-banner-stats">
+          <div>
+            <strong>{counts.all}</strong>
+            <span>Laporan</span>
+          </div>
+          <div>
+            <strong>{counts.done}</strong>
+            <span>Selesai</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Menu */}
+      <section className="section">
+        <div className="section-header">
+          <h3>Menu Profil</h3>
+        </div>
+        <div className="service-grid-modern">
+          <Link href="/lapor_mulia/riwayat" className="service-card-detailed">
+            <div className="service-card-detailed-icon" style={{background:'#E3F2FD'}}>📋</div>
+            <div className="service-card-detailed-content">
+              <div className="service-card-detailed-name">Riwayat Laporan</div>
+              <div className="service-card-detailed-desc">Lihat semua laporan Anda</div>
+            </div>
+            <div className="service-card-detailed-arrow">→</div>
+          </Link>
+          <button className="service-card-detailed" onClick={() => setActiveModal('notifikasi')}>
+            <div className="service-card-detailed-icon" style={{background:'#FFF3E0'}}>🔔</div>
+            <div className="service-card-detailed-content">
+              <div className="service-card-detailed-name">Notifikasi</div>
+              <div className="service-card-detailed-desc">Update status laporan</div>
+            </div>
+            <div className="service-card-detailed-arrow">→</div>
+            {notifications.length > 0 && <div className="service-card-detailed-badge" style={{background:'var(--danger)',color:'white'}}>{notifications.length}</div>}
+          </button>
+          <button className="service-card-detailed" onClick={() => setActiveModal('pengaturan')}>
+            <div className="service-card-detailed-icon" style={{background:'#E8F5E9'}}>⚙️</div>
+            <div className="service-card-detailed-content">
+              <div className="service-card-detailed-name">Pengaturan</div>
+              <div className="service-card-detailed-desc">Kelola akun & preferensi</div>
+            </div>
+            <div className="service-card-detailed-arrow">→</div>
+          </button>
+          <button className="service-card-detailed" onClick={() => setActiveModal('bantuan')}>
+            <div className="service-card-detailed-icon" style={{background:'#F3E5F5'}}>❓</div>
+            <div className="service-card-detailed-content">
+              <div className="service-card-detailed-name">Bantuan</div>
+              <div className="service-card-detailed-desc">FAQ & kontak support</div>
+            </div>
+            <div className="service-card-detailed-arrow">→</div>
+          </button>
+          <button className="service-card-detailed" onClick={() => window.alert('Anda telah keluar dari aplikasi.')} style={{borderColor:'var(--danger)'}}>
+            <div className="service-card-detailed-icon" style={{background:'#FFEBEE',color:'var(--danger)'}}>🚪</div>
+            <div className="service-card-detailed-content">
+              <div className="service-card-detailed-name" style={{color:'var(--danger)'}}>Keluar</div>
+              <div className="service-card-detailed-desc">Logout dari aplikasi</div>
+            </div>
+            <div className="service-card-detailed-arrow" style={{color:'var(--danger)'}}>→</div>
+          </button>
+        </div>
+      </section>
+
+      {/* Admin Panel */}
+      <section className="section">
+        <div className="section-header"><h3>🔐 Admin Panel</h3></div>
+        <div className="admin-section">
+          {!adminLoggedIn ? (
+            <div style={{display: 'grid', gap: 12, maxWidth: 320}}>
+              <div style={{fontSize:13,color:'var(--muted)',marginBottom:4}}>
+                Login sebagai admin untuk mengelola laporan mahasiswa.
+              </div>
+              <input
+                type="password"
+                placeholder="Kode admin"
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && adminLogin()}
+                style={{padding: 12, border: '1.5px solid var(--border)', borderRadius: 12, fontSize: 13}}
+              />
+              <button className="btn-primary" type="button" onClick={adminLogin} style={{padding: 12, fontSize: 13}}>
+                🔐 Login Admin
+              </button>
+              <div className="helper">Demo: <b>admin123</b></div>
+            </div>
+          ) : (
+            <div>
+              <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+                <Link href="/lapor_mulia/admin" className="btn-primary" style={{padding:'10px 16px',fontSize:13,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6}}>
+                  📊 Buka Admin Panel
+                </Link>
+                <button className="btn-secondary" type="button" onClick={() => setAdminLoggedIn(false)} style={{fontSize: 12, padding: '10px 16px'}}>
+                  🚪 Logout
+                </button>
+              </div>
+
+              {/* Quick Stats */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:16}}>
+                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'var(--primary)'}}>{reports.length}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Total</div>
+                </div>
+                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'#1E88E5'}}>{reports.filter((r) => r.status === 'Terkirim').length}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Terkirim</div>
+                </div>
+                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'#FF9800'}}>{reports.filter((r) => r.status === 'Diproses').length}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Diproses</div>
+                </div>
+                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:'#4CAF50'}}>{reports.filter((r) => r.status === 'Selesai').length}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Selesai</div>
+                </div>
+              </div>
+
+              {/* Recent Reports Quick View */}
+              <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>Laporan Terbaru</div>
+              {reports.length === 0 ? (
+                <div className="empty-state">Belum ada laporan</div>
+              ) : (
+                <div className="report-list">
+                  {reports.slice(0, 3).map((r) => (
+                    <div key={r.ticket} className="report-card">
+                      <div className="report-card-top">
+                        <span className="report-ticket">{r.ticket}</span>
+                        <span className="report-status" style={{background:getStatusColor(r.status)+'20',color:getStatusColor(r.status)}}>{r.status}</span>
+                      </div>
+                      <div className="report-title">{r.title}</div>
+                      <div className="report-meta">
+                        <span>📂 {r.category}</span>
+                        <span>📍 {r.location}</span>
+                      </div>
+                      <div className="report-card-bottom">
+                        <span className="report-card-date">📅 {r.createdAt}</span>
+                        <select
+                          value={r.status}
+                          onChange={(e) => updateStatus(r.ticket, e.target.value as ReportStatus)}
+                          style={{padding:'4px 8px',border:'1px solid var(--border)',borderRadius:8,fontSize:11,fontWeight:600}}
+                        >
+                          {['Terkirim','Diproses','Selesai','Ditolak'].map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {reports.length > 3 && (
+                <Link href="/lapor_mulia/admin" style={{display:'block',textAlign:'center',marginTop:12,fontSize:12,color:'var(--accent)',fontWeight:700}}>
+                  Lihat semua {reports.length} laporan →
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Notifikasi Modal */}
+      {activeModal === 'notifikasi' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header"><h3>🔔 Notifikasi</h3><button className="modal-close" onClick={() => setActiveModal(null)}>✕</button></div>
+            {notifications.length === 0 ? (
+              <div className="empty-state">Tidak ada notifikasi baru</div>
+            ) : (
+              <div className="report-list">
+                {notifications.map((n) => (
+                  <div key={n.ticket} className="report-card">
+                    <div className="report-card-top">
+                      <span className="report-ticket">{n.ticket}</span>
+                      <span className="report-status" style={{background:getStatusColor(n.status)+'20',color:getStatusColor(n.status)}}>{n.status}</span>
+                    </div>
+                    <div className="report-title">{n.title}</div>
+                    <div className="report-meta"><span>📅 {n.date}</span></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Pengaturan Modal */}
+      {activeModal === 'pengaturan' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header"><h3>⚙️ Pengaturan</h3><button className="modal-close" onClick={() => setActiveModal(null)}>✕</button></div>
+
+            <div className="settings-group">
+              <div className="settings-group-title">Profil Akun</div>
+              <div className="form-grid">
+                <div className="form-field full">
+                  <label>Nama</label>
+                  <input type="text" defaultValue="Mahasiswa Universitas Mulia" />
+                </div>
+                <div className="form-field">
+                  <label>NIM</label>
+                  <input type="text" defaultValue="12345678" />
+                </div>
+                <div className="form-field">
+                  <label>Fakultas</label>
+                  <input type="text" defaultValue="Teknik Informatika" />
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <div className="settings-group-title">Notifikasi</div>
+              <div style={{display:'grid',gap:12}}>
+                <div className="settings-toggle">
+                  <span className="settings-toggle-label">Push Notification</span>
+                  <input type="checkbox" checked={pushNotif} onChange={(e) => setPushNotif(e.target.checked)} />
+                </div>
+                <div className="settings-toggle">
+                  <span className="settings-toggle-label">Email Notification</span>
+                  <input type="checkbox" checked={emailNotif} onChange={(e) => setEmailNotif(e.target.checked)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <div className="settings-group-title">Data</div>
+              <button className="btn-secondary" style={{color:'var(--danger)',border:'1.5px solid var(--danger)'}} onClick={clearAllData}>🗑️ Hapus Semua Data Laporan</button>
+            </div>
+
+            <button className="btn-primary" onClick={() => setActiveModal(null)}>Simpan Pengaturan</button>
+          </div>
+        </div>
+      )}
+
+      {/* Bantuan Modal */}
+      {activeModal === 'bantuan' && (
+        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header"><h3>❓ Bantuan</h3><button className="modal-close" onClick={() => setActiveModal(null)}>✕</button></div>
+
+            <div className="settings-group">
+              <div className="settings-group-title">FAQ</div>
+              <div className="faq-list">
+                {faqItems.map((faq, i) => (
+                  <div key={i} className="faq-item">
+                    <button
+                      className="faq-question"
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    >
+                      {faq.q}
+                      <span className={`faq-arrow ${openFaq === i ? 'open' : ''}`}>▼</span>
+                    </button>
+                    {openFaq === i && (
+                      <div className="faq-answer">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Hubungi Kami</div>
+              <div className="contact-list">
+                <div className="contact-card">
+                  <div className="contact-icon">📧</div>
+                  <div className="contact-info">
+                    <div className="name">Email</div>
+                    <div className="role">helpdesk@universitasmulia.ac.id</div>
+                  </div>
+                </div>
+                <div className="contact-card">
+                  <div className="contact-icon">📞</div>
+                  <div className="contact-info">
+                    <div className="name">Telepon</div>
+                    <div className="role">(0541) 765-4321</div>
+                  </div>
+                </div>
+                <div className="contact-card">
+                  <div className="contact-icon">💬</div>
+                  <div className="contact-info">
+                    <div className="name">WhatsApp</div>
+                    <div className="role">0812-3456-7890</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
