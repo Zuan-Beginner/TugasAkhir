@@ -48,6 +48,11 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [sortColumn, setSortColumn] = useState<'ticket' | 'title' | 'createdAt' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const session = window.localStorage.getItem(ADMIN_KEY);
@@ -76,6 +81,77 @@ export default function AdminPage() {
     }
     return result;
   }, [reports, filterStatus, searchQuery]);
+
+  const sortedReports = useMemo(() => {
+    if (!sortColumn) return filteredReports;
+    return [...filteredReports].sort((a, b) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+      if (sortColumn === 'createdAt') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      }
+      if (sortDirection === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      }
+      return aVal < bVal ? 1 : -1;
+    });
+  }, [filteredReports, sortColumn, sortDirection]);
+
+  const paginatedReports = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedReports.slice(start, start + itemsPerPage);
+  }, [sortedReports, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(sortedReports.length / itemsPerPage);
+
+  function handleSort(column: 'ticket' | 'title' | 'createdAt') {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  }
+
+  function toggleRowSelection(ticket: string) {
+    const newSelection = new Set(selectedRows);
+    if (newSelection.has(ticket)) {
+      newSelection.delete(ticket);
+    } else {
+      newSelection.add(ticket);
+    }
+    setSelectedRows(newSelection);
+  }
+
+  function toggleAllRows() {
+    if (selectedRows.size === paginatedReports.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(paginatedReports.map(r => r.ticket)));
+    }
+  }
+
+  function bulkDelete() {
+    if (selectedRows.size === 0) return;
+    if (!confirm(`Hapus ${selectedRows.size} laporan yang dipilih?`)) return;
+    saveReports(reports.filter(r => !selectedRows.has(r.ticket)));
+    setSelectedRows(new Set());
+  }
+
+  function exportToCSV() {
+    const headers = ['Tiket', 'Judul', 'Kategori', 'Lokasi', 'Pelapor', 'Kontak', 'Urgensi', 'Status', 'Tanggal'];
+    const rows = sortedReports.map(r => [
+      r.ticket, r.title, r.category, r.location, r.name, r.contact, r.priority, r.status, r.createdAt
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `laporan-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  }
 
   const stats = useMemo(() => ({
     total: reports.length,
@@ -245,39 +321,73 @@ export default function AdminPage() {
 
         /* Toolbar */
         .toolbar {
-          display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+          display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+          background: var(--card); padding: 20px; border-radius: 16px; box-shadow: var(--shadow);
         }
         .search-input {
-          flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid var(--border);
-          border-radius: 12px; font-size: 13px; outline: none; background: var(--card);
+          flex: 1; min-width: 250px; padding: 12px 16px; border: 2px solid var(--border);
+          border-radius: 12px; font-size: 14px; outline: none; background: var(--bg);
+          transition: all 0.2s;
         }
-        .search-input:focus { border-color: var(--primary); }
-        .filter-tabs { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123, 16, 35, 0.1); background: white; }
+        .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
         .filter-tab {
-          padding: 8px 12px; border-radius: 10px; border: none; font-size: 12px;
-          font-weight: 700; cursor: pointer; background: var(--card); color: var(--muted);
-          box-shadow: var(--shadow); transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+          padding: 10px 16px; border-radius: 10px; border: 2px solid var(--border); font-size: 13px;
+          font-weight: 700; cursor: pointer; background: white; color: var(--text);
+          transition: all 0.2s; white-space: nowrap;
         }
-        .filter-tab.active { background: var(--primary); color: white; }
-        .filter-tab:hover:not(.active) { background: #f0f0f0; }
-        .result-count { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+        .filter-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .filter-tab:hover:not(.active) { border-color: var(--primary); transform: translateY(-1px); }
+        .result-count { 
+          font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap;
+          padding: 10px 16px; background: var(--primary-light); border-radius: 10px;
+          color: var(--primary);
+        }
+        .toolbar-actions {
+          display: flex; gap: 8px; margin-left: auto;
+        }
+        .toolbar-btn {
+          padding: 10px 16px; border: 2px solid var(--border); border-radius: 10px;
+          background: white; font-size: 13px; font-weight: 700; cursor: pointer;
+          transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .toolbar-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
+        .toolbar-btn.danger { border-color: var(--danger); color: var(--danger); }
+        .toolbar-btn.danger:hover { background: var(--danger); color: white; }
+        .toolbar-btn.success { border-color: var(--success); color: var(--success); }
+        .toolbar-btn.success:hover { background: var(--success); color: white; }
 
         /* Table */
         .table-card {
-          background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow);
-          overflow: hidden;
+          background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+          overflow: hidden; border: 1px solid var(--border);
         }
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th, td { padding: 12px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        th, td { padding: 16px 14px; text-align: left; font-size: 13px; }
         th {
-          background: var(--primary-light); color: var(--primary); font-weight: 800;
-          font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
-          position: sticky; top: 0; z-index: 5;
+          background: linear-gradient(135deg, var(--primary-light), #fff);
+          color: var(--text); font-weight: 800;
+          font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+          position: sticky; top: 0; z-index: 5; border-bottom: 2px solid var(--primary);
+          cursor: pointer; user-select: none; transition: background 0.2s;
         }
-        td { vertical-align: middle; }
-        tr:hover td { background: #FAFBFC; }
+        th:hover { background: var(--primary-light); }
+        th.sortable { position: relative; padding-right: 28px; }
+        .sort-icon {
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          font-size: 10px; color: var(--muted); transition: color 0.2s;
+        }
+        th.sorted .sort-icon { color: var(--primary); }
+        td { vertical-align: middle; border-bottom: 1px solid var(--border); }
+        tbody tr { transition: all 0.2s; }
+        tbody tr:hover { background: var(--bg); transform: scale(1.001); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        tbody tr.selected { background: var(--primary-light); }
         tr:last-child td { border-bottom: none; }
+        .checkbox-cell { width: 40px; text-align: center; }
+        .row-checkbox {
+          width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);
+        }
 
         .ticket-badge {
           font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px;
@@ -305,9 +415,36 @@ export default function AdminPage() {
           padding: 6px 10px; border: none; border-radius: 8px; font-size: 11px;
           font-weight: 700; cursor: pointer; transition: transform 0.1s;
         }
-        .action-btn:hover { transform: scale(1.05); }
-        .action-btn.view { background: var(--accent-light); color: var(--accent); }
+        .action-btn:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .action-btn.view { background: #E3F2FD; color: #1976D2; }
         .action-btn.delete { background: #FFEBEE; color: var(--danger); }
+
+        /* Pagination */
+        .pagination {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 20px; background: var(--card); border-top: 1px solid var(--border);
+        }
+        .pagination-info {
+          font-size: 13px; color: var(--muted); font-weight: 600;
+        }
+        .pagination-controls {
+          display: flex; gap: 8px; align-items: center;
+        }
+        .page-btn {
+          width: 36px; height: 36px; border: 2px solid var(--border); border-radius: 8px;
+          background: white; cursor: pointer; font-size: 13px; font-weight: 700;
+          transition: all 0.2s; display: grid; place-items: center;
+        }
+        .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
+        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-jump {
+          display: flex; gap: 8px; align-items: center;
+        }
+        .page-input {
+          width: 60px; padding: 8px; border: 2px solid var(--border); border-radius: 8px;
+          text-align: center; font-size: 13px; font-weight: 700;
+        }
 
         /* Detail Modal */
         .modal-overlay {
@@ -460,7 +597,7 @@ export default function AdminPage() {
           <input
             className="search-input"
             type="text"
-            placeholder="Cari tiket, judul, kategori, lokasi, atau nama..."
+            placeholder="🔍 Cari tiket, judul, kategori, lokasi, atau nama..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -476,73 +613,170 @@ export default function AdminPage() {
               </button>
             ))}
           </div>
-          <span className="result-count">{filteredReports.length} laporan</span>
+          <span className="result-count">{sortedReports.length} laporan</span>
+          <div className="toolbar-actions">
+            {selectedRows.size > 0 && (
+              <button className="toolbar-btn danger" type="button" onClick={bulkDelete}>
+                🗑️ Hapus ({selectedRows.size})
+              </button>
+            )}
+            <button className="toolbar-btn success" type="button" onClick={exportToCSV}>
+              📥 Export CSV
+            </button>
+          </div>
         </div>
 
         {/* Table */}
         <div className="table-card">
-          {filteredReports.length === 0 ? (
+          {sortedReports.length === 0 ? (
             <div className="empty">
               <div className="empty-icon">📋</div>
               <div className="empty-text">Tidak ada laporan ditemukan</div>
             </div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Tiket</th>
-                    <th>Judul</th>
-                    <th>Kategori</th>
-                    <th>Lokasi</th>
-                    <th>Pelapor</th>
-                    <th>Urgensi</th>
-                    <th>Status</th>
-                    <th>Tanggal</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredReports.map((report) => (
-                    <tr key={report.ticket}>
-                      <td><span className="ticket-badge">{report.ticket}</span></td>
-                      <td>
-                        <div className="cell-title">{report.title}</div>
-                        <div className="cell-sub">{report.description.slice(0, 50)}...</div>
-                      </td>
-                      <td>{report.category}</td>
-                      <td>{report.location}</td>
-                      <td>
-                        <div style={{fontSize: 13, fontWeight: 600}}>{report.name}</div>
-                        <div className="cell-sub">{report.contact}</div>
-                      </td>
-                      <td>
-                        <span className="priority-badge" style={{background: (priorityColors[report.priority] || '#999') + '20', color: priorityColors[report.priority] || '#999'}}>
-                          {report.priority}
-                        </span>
-                      </td>
-                      <td>
-                        <select
-                          className="status-select"
-                          value={report.status}
-                          onChange={(e) => updateStatus(report.ticket, e.target.value as ReportStatus)}
-                          style={{borderColor: statusColors[report.status] + '40'}}
-                        >
-                          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </td>
-                      <td style={{fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap'}}>{report.createdAt}</td>
-                      <td>
-                        <div className="action-btns">
-                          <button className="action-btn view" type="button" onClick={() => setSelectedReport(report)}>Detail</button>
-                          <button className="action-btn delete" type="button" onClick={() => setShowDeleteConfirm(filteredReports.indexOf(report))}>Hapus</button>
-                        </div>
-                      </td>
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="checkbox-cell">
+                        <input
+                          type="checkbox"
+                          className="row-checkbox"
+                          checked={selectedRows.size === paginatedReports.length && paginatedReports.length > 0}
+                          onChange={toggleAllRows}
+                        />
+                      </th>
+                      <th className={`sortable ${sortColumn === 'ticket' ? 'sorted' : ''}`} onClick={() => handleSort('ticket')}>
+                        Tiket
+                        <span className="sort-icon">{sortColumn === 'ticket' ? (sortDirection === 'asc' ? '▲' : '▼') : '▲▼'}</span>
+                      </th>
+                      <th className={`sortable ${sortColumn === 'title' ? 'sorted' : ''}`} onClick={() => handleSort('title')}>
+                        Judul
+                        <span className="sort-icon">{sortColumn === 'title' ? (sortDirection === 'asc' ? '▲' : '▼') : '▲▼'}</span>
+                      </th>
+                      <th>Kategori</th>
+                      <th>Lokasi</th>
+                      <th>Pelapor</th>
+                      <th>Urgensi</th>
+                      <th>Status</th>
+                      <th className={`sortable ${sortColumn === 'createdAt' ? 'sorted' : ''}`} onClick={() => handleSort('createdAt')}>
+                        Tanggal
+                        <span className="sort-icon">{sortColumn === 'createdAt' ? (sortDirection === 'asc' ? '▲' : '▼') : '▲▼'}</span>
+                      </th>
+                      <th>Aksi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedReports.map((report) => (
+                      <tr key={report.ticket} className={selectedRows.has(report.ticket) ? 'selected' : ''}>
+                        <td className="checkbox-cell">
+                          <input
+                            type="checkbox"
+                            className="row-checkbox"
+                            checked={selectedRows.has(report.ticket)}
+                            onChange={() => toggleRowSelection(report.ticket)}
+                          />
+                        </td>
+                        <td><span className="ticket-badge">{report.ticket}</span></td>
+                        <td>
+                          <div className="cell-title">{report.title}</div>
+                          <div className="cell-sub">{report.description.slice(0, 50)}...</div>
+                        </td>
+                        <td>{report.category}</td>
+                        <td>{report.location}</td>
+                        <td>
+                          <div style={{fontSize: 13, fontWeight: 600}}>{report.name}</div>
+                          <div className="cell-sub">{report.contact}</div>
+                        </td>
+                        <td>
+                          <span className="priority-badge" style={{background: (priorityColors[report.priority] || '#999') + '20', color: priorityColors[report.priority] || '#999'}}>
+                            {report.priority}
+                          </span>
+                        </td>
+                        <td>
+                          <select
+                            className="status-select"
+                            value={report.status}
+                            onChange={(e) => updateStatus(report.ticket, e.target.value as ReportStatus)}
+                            style={{borderColor: statusColors[report.status] + '40'}}
+                          >
+                            {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </td>
+                        <td style={{fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap'}}>{report.createdAt}</td>
+                        <td>
+                          <div className="action-btns">
+                            <button className="action-btn view" type="button" onClick={() => setSelectedReport(report)}>👁️</button>
+                            <button className="action-btn delete" type="button" onClick={() => setShowDeleteConfirm(sortedReports.indexOf(report))}>🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <div className="pagination-info">
+                    Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, sortedReports.length)} dari {sortedReports.length} laporan
+                  </div>
+                  <div className="pagination-controls">
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                    >
+                      «
+                    </button>
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      ‹
+                    </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      ›
+                    </button>
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -618,11 +852,11 @@ export default function AdminPage() {
               <div className="confirm-icon">⚠️</div>
               <div className="confirm-title">Hapus Laporan?</div>
               <div className="confirm-text">
-                Laporan <b>{filteredReports[showDeleteConfirm]?.ticket}</b> akan dihapus permanen.
+                Laporan <b>{sortedReports[showDeleteConfirm]?.ticket}</b> akan dihapus permanen.
               </div>
               <div className="confirm-btns">
                 <button className="confirm-btn cancel" type="button" onClick={() => setShowDeleteConfirm(null)}>Batal</button>
-                <button className="confirm-btn confirm-delete" type="button" onClick={() => deleteReport(filteredReports[showDeleteConfirm].ticket)}>Hapus</button>
+                <button className="confirm-btn confirm-delete" type="button" onClick={() => deleteReport(sortedReports[showDeleteConfirm].ticket)}>Hapus</button>
               </div>
             </div>
           </div>

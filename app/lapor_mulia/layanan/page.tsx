@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { defaultContacts, defaultSchedule, defaultAnnouncements, defaultBilling } from '../lib/constants';
 import type { ModalType } from '../lib/types';
 
@@ -25,6 +25,11 @@ export default function LayananPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setIsLoaded(true), 100);
+  }, []);
 
   const filtered = useMemo(() => {
     return allServices.filter((s) => {
@@ -36,8 +41,113 @@ export default function LayananPage() {
 
   return (
     <>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-40px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(40px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes bounceIn {
+          0% { opacity: 0; transform: scale(0.3); }
+          50% { opacity: 1; transform: scale(1.05); }
+          70% { transform: scale(0.9); }
+          100% { transform: scale(1); }
+        }
+
+        .fade-in-up {
+          animation: fadeInUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .slide-in-left {
+          animation: slideInLeft 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .slide-in-right {
+          animation: slideInRight 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .scale-in {
+          animation: scaleIn 0.5s ease-out forwards;
+          opacity: 0;
+        }
+        .bounce-in {
+          animation: bounceIn 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+        .stagger-6 { animation-delay: 0.6s; }
+
+        .layanan-banner {
+          transition: all 0.3s ease;
+        }
+
+        .category-filter-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .category-filter-card:hover {
+          transform: translateY(-4px) scale(1.05);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        .category-filter-card:active {
+          transform: translateY(-2px) scale(1.02);
+        }
+
+        .layanan-card-simple {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .layanan-card-simple:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+        .layanan-card-simple:hover .layanan-card-icon {
+          transform: scale(1.2) rotate(10deg);
+        }
+        .layanan-card-icon {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(123, 16, 35, 0.2);
+        }
+        .btn-primary:active {
+          transform: translateY(0);
+        }
+
+        .search-bar-modern {
+          transition: all 0.3s ease;
+        }
+        .search-bar-modern:focus-within {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+      `}</style>
+
       {/* Page Banner */}
-      <div className="layanan-banner">
+      <div className={`layanan-banner ${isLoaded ? 'fade-in-up' : ''}`}>
         <div className="layanan-banner-icon">📋</div>
         <div className="layanan-banner-content">
           <h1>Layanan Kampus</h1>
@@ -57,7 +167,7 @@ export default function LayananPage() {
 
       {/* Search Bar */}
       <section className="section">
-        <div className="search-bar-modern">
+        <div className={`search-bar-modern ${isLoaded ? 'slide-in-left stagger-1' : ''}`}>
           <div className="search-icon">🔍</div>
           <input 
             type="text" 
@@ -74,7 +184,7 @@ export default function LayananPage() {
       {/* Category Filter */}
       <section className="section" style={{marginTop: 0}}>
         <div className="category-filter-grid">
-          {categories.map((cat) => {
+          {categories.map((cat, idx) => {
             const icons = {
               'Semua': '📋',
               'Akademik': '📚',
@@ -87,7 +197,7 @@ export default function LayananPage() {
             return (
               <button 
                 key={cat} 
-                className={`category-filter-card ${activeCategory === cat ? 'active' : ''}`} 
+                className={`category-filter-card ${activeCategory === cat ? 'active' : ''} ${isLoaded ? `scale-in stagger-${idx + 2}` : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
                 <div className="category-filter-icon">{icons[cat as keyof typeof icons]}</div>
@@ -107,9 +217,9 @@ export default function LayananPage() {
 
         {filtered.length > 0 ? (
           <div className="layanan-grid-simple">
-            {filtered.map((svc) => (
+            {filtered.map((svc, idx) => (
               svc.modal ? (
-                <button key={svc.name} className="layanan-card-simple" type="button" onClick={() => setActiveModal(svc.modal)}>
+                <button key={svc.name} className={`layanan-card-simple ${isLoaded ? `fade-in-up stagger-${Math.min(idx + 1, 6)}` : ''}`} type="button" onClick={() => setActiveModal(svc.modal)}>
                   <div className="layanan-card-icon" style={{ background: svc.bg }}>{svc.icon}</div>
                   <div className="layanan-card-content">
                     <div className="layanan-card-name">{svc.name}</div>
@@ -118,7 +228,7 @@ export default function LayananPage() {
                   <div className="layanan-card-arrow">›</div>
                 </button>
               ) : (
-                <a key={svc.name} href={svc.href || '#'} className="layanan-card-simple">
+                <a key={svc.name} href={svc.href || '#'} className={`layanan-card-simple ${isLoaded ? `fade-in-up stagger-${Math.min(idx + 1, 6)}` : ''}`}>
                   <div className="layanan-card-icon" style={{ background: svc.bg }}>{svc.icon}</div>
                   <div className="layanan-card-content">
                     <div className="layanan-card-name">{svc.name}</div>

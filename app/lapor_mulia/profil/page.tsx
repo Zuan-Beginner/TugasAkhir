@@ -16,9 +16,11 @@ export default function ProfilPage() {
   const [pushNotif, setPushNotif] = useState(true);
   const [emailNotif, setEmailNotif] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     setReports(getReports());
+    setTimeout(() => setIsLoaded(true), 100);
   }, []);
 
   const counts = useMemo(() => ({
@@ -75,8 +77,115 @@ export default function ProfilPage() {
 
   return (
     <>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-40px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(40px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes bounceIn {
+          0% { opacity: 0; transform: scale(0.3); }
+          50% { opacity: 1; transform: scale(1.05); }
+          70% { transform: scale(0.9); }
+          100% { transform: scale(1); }
+        }
+
+        .fade-in-up {
+          animation: fadeInUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .slide-in-left {
+          animation: slideInLeft 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .slide-in-right {
+          animation: slideInRight 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .scale-in {
+          animation: scaleIn 0.5s ease-out forwards;
+          opacity: 0;
+        }
+        .bounce-in {
+          animation: bounceIn 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+        .stagger-6 { animation-delay: 0.6s; }
+
+        .layanan-banner {
+          transition: all 0.3s ease;
+        }
+
+        .profile-avatar {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .profile-avatar:hover {
+          transform: scale(1.1) rotate(5deg);
+        }
+
+        .service-card-detailed {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .service-card-detailed:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+
+        .stat-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stat-card:hover {
+          transform: translateY(-4px) scale(1.05);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary, .btn-secondary, .btn-danger {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(123, 16, 35, 0.2);
+        }
+        .btn-secondary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .btn-danger:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(220, 38, 38, 0.2);
+        }
+
+        .faq-item {
+          transition: all 0.3s ease;
+        }
+        .faq-item:hover {
+          background: #f5f5f5;
+        }
+      `}</style>
+
       {/* Page Banner */}
-      <div className="layanan-banner">
+      <div className={`layanan-banner ${isLoaded ? 'fade-in-up' : ''}`}>
         <div className="profile-avatar" style={{width:80,height:80,fontSize:40,margin:'0 auto 16px'}}>M</div>
         <div className="layanan-banner-content" style={{textAlign:'center'}}>
           <h1>Mahasiswa</h1>
@@ -100,7 +209,7 @@ export default function ProfilPage() {
           <h3>Menu Profil</h3>
         </div>
         <div className="service-grid-modern">
-          <Link href="/lapor_mulia/riwayat" className="service-card-detailed">
+          <Link href="/lapor_mulia/riwayat" className={`service-card-detailed ${isLoaded ? 'slide-in-left stagger-1' : ''}`}>
             <div className="service-card-detailed-icon" style={{background:'#E3F2FD'}}>📋</div>
             <div className="service-card-detailed-content">
               <div className="service-card-detailed-name">Riwayat Laporan</div>
@@ -108,7 +217,7 @@ export default function ProfilPage() {
             </div>
             <div className="service-card-detailed-arrow">→</div>
           </Link>
-          <button className="service-card-detailed" onClick={() => setActiveModal('notifikasi')}>
+          <button className={`service-card-detailed ${isLoaded ? 'slide-in-right stagger-2' : ''}`} onClick={() => setActiveModal('notifikasi')}>
             <div className="service-card-detailed-icon" style={{background:'#FFF3E0'}}>🔔</div>
             <div className="service-card-detailed-content">
               <div className="service-card-detailed-name">Notifikasi</div>
@@ -117,7 +226,7 @@ export default function ProfilPage() {
             <div className="service-card-detailed-arrow">→</div>
             {notifications.length > 0 && <div className="service-card-detailed-badge" style={{background:'var(--danger)',color:'white'}}>{notifications.length}</div>}
           </button>
-          <button className="service-card-detailed" onClick={() => setActiveModal('pengaturan')}>
+          <button className={`service-card-detailed ${isLoaded ? 'slide-in-left stagger-3' : ''}`} onClick={() => setActiveModal('pengaturan')}>
             <div className="service-card-detailed-icon" style={{background:'#E8F5E9'}}>⚙️</div>
             <div className="service-card-detailed-content">
               <div className="service-card-detailed-name">Pengaturan</div>
@@ -125,7 +234,7 @@ export default function ProfilPage() {
             </div>
             <div className="service-card-detailed-arrow">→</div>
           </button>
-          <button className="service-card-detailed" onClick={() => setActiveModal('bantuan')}>
+          <button className={`service-card-detailed ${isLoaded ? 'slide-in-right stagger-4' : ''}`} onClick={() => setActiveModal('bantuan')}>
             <div className="service-card-detailed-icon" style={{background:'#F3E5F5'}}>❓</div>
             <div className="service-card-detailed-content">
               <div className="service-card-detailed-name">Bantuan</div>
@@ -133,7 +242,7 @@ export default function ProfilPage() {
             </div>
             <div className="service-card-detailed-arrow">→</div>
           </button>
-          <button className="service-card-detailed" onClick={() => window.alert('Anda telah keluar dari aplikasi.')} style={{borderColor:'var(--danger)'}}>
+          <button className={`service-card-detailed ${isLoaded ? 'slide-in-left stagger-5' : ''}`} onClick={() => window.alert('Anda telah keluar dari aplikasi.')} style={{borderColor:'var(--danger)'}}>
             <div className="service-card-detailed-icon" style={{background:'#FFEBEE',color:'var(--danger)'}}>🚪</div>
             <div className="service-card-detailed-content">
               <div className="service-card-detailed-name" style={{color:'var(--danger)'}}>Keluar</div>
@@ -179,19 +288,19 @@ export default function ProfilPage() {
 
               {/* Quick Stats */}
               <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:16}}>
-                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                <div className={`stat-card ${isLoaded ? 'scale-in stagger-1' : ''}`} style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
                   <div style={{fontSize:18,fontWeight:800,color:'var(--primary)'}}>{reports.length}</div>
                   <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Total</div>
                 </div>
-                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                <div className={`stat-card ${isLoaded ? 'scale-in stagger-2' : ''}`} style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
                   <div style={{fontSize:18,fontWeight:800,color:'#1E88E5'}}>{reports.filter((r) => r.status === 'Terkirim').length}</div>
                   <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Terkirim</div>
                 </div>
-                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                <div className={`stat-card ${isLoaded ? 'scale-in stagger-3' : ''}`} style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
                   <div style={{fontSize:18,fontWeight:800,color:'#FF9800'}}>{reports.filter((r) => r.status === 'Diproses').length}</div>
                   <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Diproses</div>
                 </div>
-                <div style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
+                <div className={`stat-card ${isLoaded ? 'scale-in stagger-4' : ''}`} style={{background:'var(--bg)',padding:10,borderRadius:10,textAlign:'center'}}>
                   <div style={{fontSize:18,fontWeight:800,color:'#4CAF50'}}>{reports.filter((r) => r.status === 'Selesai').length}</div>
                   <div style={{fontSize:10,color:'var(--muted)',fontWeight:600}}>Selesai</div>
                 </div>
@@ -203,8 +312,8 @@ export default function ProfilPage() {
                 <div className="empty-state">Belum ada laporan</div>
               ) : (
                 <div className="report-list">
-                  {reports.slice(0, 3).map((r) => (
-                    <div key={r.ticket} className="report-card">
+                  {reports.slice(0, 3).map((r, idx) => (
+                    <div key={r.ticket} className={`report-card ${isLoaded ? `fade-in-up stagger-${idx + 1}` : ''}`}>
                       <div className="report-card-top">
                         <span className="report-ticket">{r.ticket}</span>
                         <span className="report-status" style={{background:getStatusColor(r.status)+'20',color:getStatusColor(r.status)}}>{r.status}</span>

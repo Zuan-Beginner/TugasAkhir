@@ -3,6 +3,7 @@ import type { Announcement, BillingItem, ContactItem, ReportFormState, ReportSta
 export const STORAGE_KEY = 'muliaLaporReportsFull';
 export const ANNOUNCEMENT_KEY = 'muliaAnnouncements';
 export const BILLING_KEY = 'muliaBilling';
+export const DRAFT_KEY = 'muliaLaporDraft';
 
 export const categories = [
   { name: 'Fasilitas', icon: '🪑', desc: 'AC, kursi, LCD, toilet', color: '#1E88E5' },

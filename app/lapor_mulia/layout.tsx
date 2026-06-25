@@ -7,9 +7,12 @@ import { getReports } from './lib/storage';
 import type { Report } from './lib/types';
 import './styles/globals.css';
 
+const THEME_KEY = 'muliaTheme';
+
 export default function MuliaLaporLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [reports, setReports] = useState<Report[]>([]);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     setReports(getReports());
@@ -17,6 +20,22 @@ export default function MuliaLaporLayout({ children }: { children: React.ReactNo
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(THEME_KEY);
+    const initial = saved === 'dark' || saved === 'light' ? saved : 'light';
+    setTheme(initial);
+    document.documentElement.setAttribute('data-theme', initial);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      window.localStorage.setItem(THEME_KEY, next);
+      return next;
+    });
+  };
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -44,6 +63,15 @@ export default function MuliaLaporLayout({ children }: { children: React.ReactNo
               </div>
             </Link>
             <div className="header-actions">
+              <button
+                type="button"
+                className="theme-toggle"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
+                title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
               <Link href="/lapor_mulia/profil" className="header-btn">
                 🔔
                 {reports.some((r) => r.status === 'Diproses') && <span className="badge-dot" />}

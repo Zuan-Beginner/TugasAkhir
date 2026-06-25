@@ -1,5 +1,5 @@
-import { STORAGE_KEY, ANNOUNCEMENT_KEY, BILLING_KEY, defaultAnnouncements, defaultBilling } from './constants';
-import type { Announcement, BillingItem, Report } from './types';
+import { STORAGE_KEY, ANNOUNCEMENT_KEY, BILLING_KEY, DRAFT_KEY, defaultAnnouncements, defaultBilling } from './constants';
+import type { Announcement, BillingItem, Report, ReportFormState } from './types';
 
 export function createTicketNumber() {
   const random = Math.floor(1000 + Math.random() * 9000);
@@ -44,4 +44,24 @@ export function getBilling(): BillingItem[] {
 export function saveBilling(billing: BillingItem[]) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(BILLING_KEY, JSON.stringify(billing));
+}
+
+export function getDraft(): ReportFormState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = window.localStorage.getItem(DRAFT_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDraft(form: ReportFormState) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+}
+
+export function clearDraft() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(DRAFT_KEY);
 }
