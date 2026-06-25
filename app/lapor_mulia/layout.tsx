@@ -100,13 +100,13 @@ export default function MuliaLaporLayout({ children }: { children: React.ReactNo
             <span className="nav-icon">➕</span>
             <span className="nav-label">Lapor</span>
           </Link>
+          <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
+            <span className="nav-icon">💬</span>
+            <span className="nav-label">Forum</span>
+          </Link>
           <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
             <span className="nav-icon">📊</span>
             <span className="nav-label">Riwayat</span>
-          </Link>
-          <Link href="/lapor_mulia/profil" className={isActive('/lapor_mulia/profil') ? 'active' : ''}>
-            <span className="nav-icon">👤</span>
-            <span className="nav-label">Profil</span>
           </Link>
         </nav>
       </div>
