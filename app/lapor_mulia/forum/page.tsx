@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../lib/auth-context';
 
 type Reply = {
   id: string;
@@ -54,25 +55,19 @@ function saveUser(user: { name: string; avatar: string }) {
 }
 
 export default function ForumPage() {
+  const { user: authUser, isAdmin } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
-  const [user, setUser] = useState<{ name: string; avatar: string } | null>(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState(avatarEmojis[0]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [filterMode, setFilterMode] = useState<'all' | 'mine' | 'starred' | 'pinned'>('all');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Convert authUser to forum user format
+  const user = authUser ? { name: authUser.name, avatar: authUser.avatar } : null;
+
   useEffect(() => {
-    const savedUser = getUser();
-    if (savedUser) {
-      setUser(savedUser);
-    } else {
-      setShowUserModal(true);
-    }
     loadMessages();
     setTimeout(() => setIsLoaded(true), 100);
 
@@ -99,13 +94,7 @@ export default function ForumPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  function handleSetUser() {
-    if (!userName.trim()) return;
-    const newUser = { name: userName.trim(), avatar: selectedAvatar };
-    saveUser(newUser);
-    setUser(newUser);
-    setShowUserModal(false);
-  }
+
 
   function handleSendMessage() {
     if (!newMessage.trim() || !user) return;
@@ -214,15 +203,7 @@ export default function ForumPage() {
     }
   }
 
-  function changeUser() {
-    setShowUserModal(true);
-  }
 
-  function isAdmin() {
-    if (!user) return false;
-    return ADMIN_USERS.some(admin => user.name.toLowerCase().includes(admin.toLowerCase())) ||
-           typeof window !== 'undefined' && window.localStorage.getItem(ADMIN_KEY) === 'true';
-  }
 
   function handlePinMessage(messageId: string) {
     if (!isAdmin()) return;
@@ -790,10 +771,10 @@ export default function ForumPage() {
             </button>
           )}
           {user && (
-            <button className="user-btn" onClick={changeUser}>
+            <div className="user-btn" style={{cursor: 'default'}}>
               <span style={{fontSize: 20}}>{user.avatar}</span>
               <span>{user.name} {isAdmin() && '(Admin)'}</span>
-            </button>
+            </div>
           )}
         </div>
 
@@ -997,38 +978,7 @@ export default function ForumPage() {
         </div>
       </div>
 
-      {/* User Setup Modal */}
-      {showUserModal && (
-        <div className="modal-overlay">
-          <div className="modal-box">
-            <div className="modal-title">👋 Selamat Datang!</div>
-            <div className="modal-subtitle">Atur identitas Anda untuk mulai berdiskusi</div>
-            <input 
-              className="modal-input" 
-              type="text" 
-              placeholder="Nama Anda (NIM atau Nama Lengkap)"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSetUser()}
-            />
-            <div style={{fontSize: 12, fontWeight: 700, marginBottom: 12, color: 'var(--text)'}}>Pilih Avatar:</div>
-            <div className="avatar-grid">
-              {avatarEmojis.map(emoji => (
-                <div 
-                  key={emoji}
-                  className={`avatar-option ${selectedAvatar === emoji ? 'selected' : ''}`}
-                  onClick={() => setSelectedAvatar(emoji)}
-                >
-                  {emoji}
-                </div>
-              ))}
-            </div>
-            <button className="modal-btn" onClick={handleSetUser} disabled={!userName.trim()}>
-              Mulai Berdiskusi
-            </button>
-          </div>
-        </div>
-      )}
+
     </>
   );
 }

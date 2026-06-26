@@ -3,9 +3,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import { getReports, saveReports } from '../lib/storage';
 import { getStatusColor, getStatusStep, statuses } from '../lib/constants';
+import { useAuth } from '../lib/auth-context';
 import type { Report, ReportStatus } from '../lib/types';
 
 export default function RiwayatPage() {
+  const { user, isAdmin } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [ticketSearch, setTicketSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'Semua'>('Semua');

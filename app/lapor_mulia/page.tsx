@@ -297,6 +297,10 @@ export default function BerandaPage() {
           <span className="qa-icon">💰</span> Keuangan {unpaidCount > 0 && <span style={{background:'#FF9800',color:'white',padding:'2px 6px',borderRadius:'6px',fontSize:'10px'}}>{unpaidCount}</span>}
         </button>
         <button className="quick-action-btn" type="button" onClick={() => setActiveModal('darurat')}><span className="qa-icon">🚨</span> Darurat</button>
+        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('jadwal')}><span className="qa-icon">📅</span> Jadwal</button>
+        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('perpustakaan')}><span className="qa-icon">📖</span> Perpustakaan</button>
+        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('direktori')}><span className="qa-icon">🏢</span> Direktori</button>
+        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('elearning')}><span className="qa-icon">📚</span> E-Learning</button>
       </div>
 
       {/* Service Grid */}
