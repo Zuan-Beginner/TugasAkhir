@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.mimocode/
+node_modules/
+.env
+.env.local
+
+node_modules/
+.next/
+.env
+.env.local
+.mimocode/
+nul

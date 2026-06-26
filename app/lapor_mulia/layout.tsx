@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getReports } from './lib/storage';
 import type { Report } from './lib/types';
+import { AuthProvider, useAuth } from './lib/auth-context';
+import { LoginModal } from './components/LoginModal';
 import './styles/globals.css';
 
 const THEME_KEY = 'muliaTheme';
 
-export default function MuliaLaporLayout({ children }: { children: React.ReactNode }) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, login, logout, isAdmin } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
@@ -45,6 +48,11 @@ export default function MuliaLaporLayout({ children }: { children: React.ReactNo
     return 'Selamat Malam';
   }, []);
 
+  // Show login modal if no user
+  if (!user) {
+    return <LoginModal onLogin={login} />;
+  }
+
   const isActive = (path: string) => {
     if (path === '/lapor_mulia') return pathname === '/lapor_mulia';
     return pathname.startsWith(path);
@@ -76,12 +84,21 @@ export default function MuliaLaporLayout({ children }: { children: React.ReactNo
                 🔔
                 {reports.some((r) => r.status === 'Diproses') && <span className="badge-dot" />}
               </Link>
-              <Link href="/lapor_mulia/profil" className="header-btn">👤</Link>
+              <Link href="/lapor_mulia/profil" className="header-btn" title={user.name}>{user.avatar}</Link>
+              <button
+                type="button"
+                className="header-btn"
+                onClick={logout}
+                title="Logout"
+                style={{background: 'transparent', border: 'none', cursor: 'pointer'}}
+              >
+                🚪
+              </button>
             </div>
           </div>
           <div className="greeting">
-            <h2>{greeting}, Mahasiswa! 👋</h2>
-            <p>NIM: 12345678 • Fakultas Teknik Informatika</p>
+            <h2>{greeting}, {user.name}! 👋</h2>
+            <p>{isAdmin() ? '🔐 Administrator' : '👨‍🎓 Mahasiswa'} • {user.role === 'admin' ? 'Pengelola Sistem' : 'Fakultas Teknik Informatika'}</p>
           </div>
         </header>
 
@@ -111,5 +128,13 @@ export default function MuliaLaporLayout({ children }: { children: React.ReactNo
         </nav>
       </div>
     </>
+  );
+}
+
+export default function MuliaLaporLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </AuthProvider>
   );
 }
