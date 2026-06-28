@@ -51,8 +51,6 @@ export default function AdminPage() {
   const [sortColumn, setSortColumn] = useState<'ticket' | 'title' | 'createdAt' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   useEffect(() => {
     const session = window.localStorage.getItem(ADMIN_KEY);
@@ -85,11 +83,11 @@ export default function AdminPage() {
   const sortedReports = useMemo(() => {
     if (!sortColumn) return filteredReports;
     return [...filteredReports].sort((a, b) => {
-      let aVal = a[sortColumn];
-      let bVal = b[sortColumn];
+      let aVal: string | number = a[sortColumn];
+      let bVal: string | number = b[sortColumn];
       if (sortColumn === 'createdAt') {
-        aVal = new Date(aVal).getTime();
-        bVal = new Date(bVal).getTime();
+        aVal = new Date(aVal as string).getTime();
+        bVal = new Date(bVal as string).getTime();
       }
       if (sortDirection === 'asc') {
         return aVal > bVal ? 1 : -1;
@@ -98,12 +96,7 @@ export default function AdminPage() {
     });
   }, [filteredReports, sortColumn, sortDirection]);
 
-  const paginatedReports = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedReports.slice(start, start + itemsPerPage);
-  }, [sortedReports, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(sortedReports.length / itemsPerPage);
+  // Gunakan semua laporan terurut (tidak ada pagination)
 
   function handleSort(column: 'ticket' | 'title' | 'createdAt') {
     if (sortColumn === column) {
@@ -125,10 +118,10 @@ export default function AdminPage() {
   }
 
   function toggleAllRows() {
-    if (selectedRows.size === paginatedReports.length) {
+    if (selectedRows.size === sortedReports.length) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(paginatedReports.map(r => r.ticket)));
+      setSelectedRows(new Set(sortedReports.map(r => r.ticket)));
     }
   }
 
@@ -139,18 +132,98 @@ export default function AdminPage() {
     setSelectedRows(new Set());
   }
 
-  function exportToCSV() {
-    const headers = ['Tiket', 'Judul', 'Kategori', 'Lokasi', 'Pelapor', 'Kontak', 'Urgensi', 'Status', 'Tanggal'];
-    const rows = sortedReports.map(r => [
-      r.ticket, r.title, r.category, r.location, r.name, r.contact, r.priority, r.status, r.createdAt
-    ]);
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `laporan-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+  async function exportToPDF() {
+    try {
+      // Dynamic import untuk jspdf dan autotable
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+
+      const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+
+      // Set font
+      doc.setFont('Arial');
+
+      // Title
+      doc.setFontSize(16);
+      doc.text('Laporan Pengaduan - Universitas Mulia', 14, 15);
+
+      // Date
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Tanggal Export: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+      doc.setTextColor(0);
+
+      // Table headers
+      const headers = ['Tiket', 'Judul', 'Kategori', 'Lokasi', 'Pelapor', 'Urgensi', 'Status', 'Tanggal'];
+
+      // Table data
+      const data = sortedReports.map(r => [
+        r.ticket,
+        r.title,
+        r.category,
+        r.location,
+        r.name,
+        r.priority,
+        r.status,
+        r.createdAt
+      ]);
+
+      // Add table dengan styling
+      autoTable(doc, {
+        head: [headers],
+        body: data,
+        startY: 28,
+        margin: { left: 10, right: 10, top: 10, bottom: 10 },
+        headStyles: {
+          fillColor: [123, 16, 35], // Primary color
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 10,
+          cellPadding: 3,
+          halign: 'center'
+        },
+        bodyStyles: {
+          fontSize: 9,
+          cellPadding: 2.5,
+          textColor: 0
+        },
+        alternateRowStyles: {
+          fillColor: [245, 247, 250] // Light gray background untuk alternating rows
+        },
+        columnStyles: {
+          0: { cellWidth: 18, halign: 'center' },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 22, halign: 'center' },
+          3: { cellWidth: 22, halign: 'center' },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 15, halign: 'center' },
+          6: { cellWidth: 18, halign: 'center' },
+          7: { cellWidth: 22, halign: 'center' }
+        },
+        didDrawPage: (data) => {
+          // Footer
+          const pageCount = doc.getNumberOfPages();
+          const pageSize = doc.internal.pageSize;
+          const pageHeight = pageSize.getHeight();
+          const footerY = pageHeight - 10;
+
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(
+            `Halaman ${data.pageNumber} dari ${pageCount}`,
+            pageSize.getWidth() / 2,
+            footerY,
+            { align: 'center' }
+          );
+        }
+      });
+
+      // Save PDF
+      doc.save(`laporan-mulia-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      alert('Gagal export PDF. Pastikan library jspdf dan jspdf-autotable sudah ter-install.');
+      console.error(error);
+    }
   }
 
   const stats = useMemo(() => ({
@@ -363,8 +436,8 @@ export default function AdminPage() {
           overflow: hidden; border: 1px solid var(--border);
         }
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
-        th, td { padding: 16px 14px; text-align: left; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 10px; text-align: left; font-size: 12px; }
         th {
           background: linear-gradient(135deg, var(--primary-light), #fff);
           color: var(--text); font-weight: 800;
@@ -373,9 +446,9 @@ export default function AdminPage() {
           cursor: pointer; user-select: none; transition: background 0.2s;
         }
         th:hover { background: var(--primary-light); }
-        th.sortable { position: relative; padding-right: 28px; }
+        th.sortable { position: relative; padding-right: 24px; }
         .sort-icon {
-          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
           font-size: 10px; color: var(--muted); transition: color 0.2s;
         }
         th.sorted .sort-icon { color: var(--primary); }
@@ -384,29 +457,28 @@ export default function AdminPage() {
         tbody tr:hover { background: var(--bg); transform: scale(1.001); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         tbody tr.selected { background: var(--primary-light); }
         tr:last-child td { border-bottom: none; }
-        .checkbox-cell { width: 40px; text-align: center; }
+        .checkbox-cell { width: 36px; text-align: center; padding: 12px 8px; }
         .row-checkbox {
-          width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);
+          width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);
         }
 
         .ticket-badge {
-          font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px;
+          font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
           background: var(--primary-light); color: var(--primary); white-space: nowrap;
         }
         .status-badge {
-          font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px;
+          font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
           white-space: nowrap;
         }
         .priority-badge {
-          font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+          font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
           white-space: nowrap;
         }
-        .cell-title { font-weight: 700; font-size: 13px; }
-        .cell-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .cell-title { font-weight: 700; font-size: 12px; }
 
         .status-select {
-          padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border);
-          font-size: 12px; font-weight: 600; cursor: pointer; background: white;
+          padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);
+          font-size: 11px; font-weight: 600; cursor: pointer; background: white;
         }
         .status-select:focus { border-color: var(--primary); outline: none; }
 
@@ -620,8 +692,8 @@ export default function AdminPage() {
                 🗑️ Hapus ({selectedRows.size})
               </button>
             )}
-            <button className="toolbar-btn success" type="button" onClick={exportToCSV}>
-              📥 Export CSV
+            <button className="toolbar-btn success" type="button" onClick={exportToPDF}>
+              📄 Export PDF
             </button>
           </div>
         </div>
@@ -643,7 +715,7 @@ export default function AdminPage() {
                         <input
                           type="checkbox"
                           className="row-checkbox"
-                          checked={selectedRows.size === paginatedReports.length && paginatedReports.length > 0}
+                          checked={selectedRows.size === sortedReports.length && sortedReports.length > 0}
                           onChange={toggleAllRows}
                         />
                       </th>
@@ -668,7 +740,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedReports.map((report) => (
+                    {sortedReports.map((report) => (
                       <tr key={report.ticket} className={selectedRows.has(report.ticket) ? 'selected' : ''}>
                         <td className="checkbox-cell">
                           <input
@@ -681,7 +753,6 @@ export default function AdminPage() {
                         <td><span className="ticket-badge">{report.ticket}</span></td>
                         <td>
                           <div className="cell-title">{report.title}</div>
-                          <div className="cell-sub">{report.description.slice(0, 50)}...</div>
                         </td>
                         <td>{report.category}</td>
                         <td>{report.location}</td>
@@ -716,66 +787,6 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
-              
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <div className="pagination-info">
-                    Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, sortedReports.length)} dari {sortedReports.length} laporan
-                  </div>
-                  <div className="pagination-controls">
-                    <button
-                      className="page-btn"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                    >
-                      «
-                    </button>
-                    <button
-                      className="page-btn"
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      ‹
-                    </button>
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      return (
-                        <button
-                          key={pageNum}
-                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
-                          onClick={() => setCurrentPage(pageNum)}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    <button
-                      className="page-btn"
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      ›
-                    </button>
-                    <button
-                      className="page-btn"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages}
-                    >
-                      »
-                    </button>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>
