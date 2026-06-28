@@ -83,11 +83,11 @@ export default function AdminPage() {
   const sortedReports = useMemo(() => {
     if (!sortColumn) return filteredReports;
     return [...filteredReports].sort((a, b) => {
-      let aVal = a[sortColumn];
-      let bVal = b[sortColumn];
+      let aVal: string | number = a[sortColumn];
+      let bVal: string | number = b[sortColumn];
       if (sortColumn === 'createdAt') {
-        aVal = new Date(aVal).getTime();
-        bVal = new Date(bVal).getTime();
+        aVal = new Date(aVal as string).getTime();
+        bVal = new Date(bVal as string).getTime();
       }
       if (sortDirection === 'asc') {
         return aVal > bVal ? 1 : -1;

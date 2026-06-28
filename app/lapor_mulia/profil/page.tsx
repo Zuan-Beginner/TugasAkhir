@@ -46,6 +46,13 @@ export default function ProfilPage() {
     { q: 'Bagaimana jika laporan saya ditolak?', a: 'Laporan ditolak jika tidak sesuai kategori atau duplikat. Silakan buat laporan baru dengan data yang lebih lengkap.' },
   ];
 
+  const clearAllData = () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus semua data laporan? Tindakan ini tidak dapat dibatalkan.')) {
+      saveReports([]);
+      setReports([]);
+    }
+  };
+
   return (
     <>
       <style>{`
