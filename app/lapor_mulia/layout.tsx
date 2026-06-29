@@ -84,7 +84,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 🔔
                 {reports.some((r) => r.status === 'Diproses') && <span className="badge-dot" />}
               </Link>
-              <Link href="/lapor_mulia/profil" className="header-btn" title={user.name}>{user.avatar}</Link>
+              <Link href="/lapor_mulia/profil" className="header-btn" title={user.name}>
+                {user.gender === 'laki' ? '👨' : '👩'}
+              </Link>
               <button
                 type="button"
                 className="header-btn"
@@ -98,7 +100,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </div>
           <div className="greeting">
             <h2>{greeting}, {user.name}! 👋</h2>
-            <p>{isAdmin() ? '🔐 Administrator' : '👨‍🎓 Mahasiswa'} • {user.role === 'admin' ? 'Pengelola Sistem' : 'Fakultas Teknik Informatika'}</p>
+            <p>{isAdmin() ? 'Administrator' : `Pelapor ${user.gender === 'laki' ? 'Laki-laki' : 'Perempuan'}`}</p>
           </div>
         </header>
 

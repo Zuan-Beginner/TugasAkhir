@@ -8,11 +8,13 @@ type AuthUser = {
   name: string;
   role: UserRole;
   avatar: string;
+  gender: string;
+  nim?: string;
 };
 
 type AuthContextType = {
   user: AuthUser | null;
-  login: (name: string, role: UserRole, avatar: string) => void;
+  login: (name: string, role: UserRole, avatar: string, gender: string, nim?: string) => void;
   logout: () => void;
   isAdmin: () => boolean;
 };
@@ -40,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (name: string, role: UserRole, avatar: string) => {
-    const newUser: AuthUser = { name, role, avatar };
+  const login = (name: string, role: UserRole, avatar: string, gender: string, nim?: string) => {
+    const newUser: AuthUser = { name, role, avatar, gender, nim };
     setUser(newUser);
     if (typeof window !== 'undefined') {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
