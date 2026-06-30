@@ -8,11 +8,14 @@ type AuthUser = {
   name: string;
   role: UserRole;
   avatar: string;
+  gender?: string;
+  nim?: string;
+  faculty?: string;
 };
 
 type AuthContextType = {
   user: AuthUser | null;
-  login: (name: string, role: UserRole, avatar: string) => void;
+  login: (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => void;
   logout: () => void;
   isAdmin: () => boolean;
 };
@@ -26,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load user from localStorage on mount
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(AUTH_STORAGE_KEY);
       if (saved) {
@@ -40,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (name: string, role: UserRole, avatar: string) => {
-    const newUser: AuthUser = { name, role, avatar };
+  const login = (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => {
+    const newUser: AuthUser = { name, role, avatar, gender, nim, faculty };
     setUser(newUser);
     if (typeof window !== 'undefined') {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
