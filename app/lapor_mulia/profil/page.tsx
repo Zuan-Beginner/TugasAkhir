@@ -266,7 +266,7 @@ export default function ProfilPage() {
       <section className="section">
         <div className="section-header"><h3>🔐 Admin Panel</h3></div>
         <div className="admin-section">
-          {isAdmin() ? (
+          {isAdmin() || adminLoggedIn ? (
             <div>
               <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
                 <Link href="/lapor_mulia/admin" className="btn-primary" style={{padding:'10px 16px',fontSize:13,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6}}>
@@ -340,9 +340,18 @@ export default function ProfilPage() {
               <div style={{fontSize:13,color:'var(--muted)',marginBottom:4}}>
                 Masuk sebagai admin untuk mengelola laporan mahasiswa.
               </div>
-              <Link href="/lapor_mulia/admin" className="btn-primary" style={{padding: 12, fontSize: 13, textAlign:'center', textDecoration:'none'}}>
+              <input
+                type="password"
+                placeholder="Kode admin"
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && adminLogin()}
+                style={{padding: 12, border: '1.5px solid var(--border)', borderRadius: 12, fontSize: 13}}
+              />
+              <button className="btn-primary" type="button" onClick={adminLogin} style={{padding: 12, fontSize: 13}}>
                 🔐 Login Admin
-              </Link>
+              </button>
+              <div className="helper">Demo: <b>admin123</b></div>
             </div>
           )}
         </div>
