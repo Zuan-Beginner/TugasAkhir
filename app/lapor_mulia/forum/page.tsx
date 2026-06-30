@@ -357,7 +357,7 @@ export default function ForumPage() {
         .filter-btn {
           padding: 10px 20px;
           border: 2px solid var(--border);
-          background: white;
+          background: var(--card);
           border-radius: 12px;
           font-size: 13px;
           font-weight: 700;
@@ -377,7 +377,7 @@ export default function ForumPage() {
           margin-left: auto;
           padding: 10px 20px;
           border: 2px solid var(--border);
-          background: white;
+          background: var(--card);
           border-radius: 12px;
           font-size: 13px;
           font-weight: 700;
@@ -393,7 +393,7 @@ export default function ForumPage() {
         }
 
         .messages-container {
-          background: white;
+          background: var(--card);
           border-radius: 20px;
           padding: 24px;
           min-height: 400px;
@@ -467,7 +467,7 @@ export default function ForumPage() {
         .message-action-btn {
           padding: 6px 12px;
           border: none;
-          background: white;
+          background: var(--card);
           border-radius: 8px;
           font-size: 12px;
           font-weight: 600;
@@ -494,7 +494,7 @@ export default function ForumPage() {
         }
 
         .compose-box {
-          background: white;
+          background: var(--card);
           border-radius: 20px;
           padding: 20px;
           box-shadow: 0 4px 20px rgba(0,0,0,0.08);
@@ -525,6 +525,9 @@ export default function ForumPage() {
           min-height: 80px;
           font-family: inherit;
           transition: all 0.3s;
+          color: var(--text);
+          caret-color: var(--primary);
+          background: var(--bg);
         }
         .compose-input:focus {
           border-color: var(--primary);
@@ -572,7 +575,7 @@ export default function ForumPage() {
           padding: 20px;
         }
         .modal-box {
-          background: white;
+          background: var(--card);
           border-radius: 24px;
           padding: 32px;
           max-width: 400px;
@@ -659,7 +662,7 @@ export default function ForumPage() {
 
         .context-menu {
           position: fixed;
-          background: white;
+          background: var(--card);
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.2);
           padding: 8px;
@@ -702,7 +705,7 @@ export default function ForumPage() {
           position: absolute;
           top: 16px;
           right: 16px;
-          background: white;
+          background: var(--card);
           border: 2px solid var(--border);
           border-radius: 50%;
           width: 32px;
@@ -721,6 +724,18 @@ export default function ForumPage() {
           background: linear-gradient(135deg, #fbbf24, #f59e0b);
           border-color: #f59e0b;
         }
+        /* Dark mode overrides */
+        [data-theme="dark"] .forum-container { color: var(--text); }
+        [data-theme="dark"] .forum-banner { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+        [data-theme="dark"] .filter-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .user-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .message-card { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .reply-card { background: var(--bg); border-color: var(--border); }
+        [data-theme="dark"] .reply-input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .message-input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .reply-input::placeholder, [data-theme="dark"] .message-input::placeholder { color: var(--muted); }
+        [data-theme="dark"] .modal-content { background: var(--card); }
+        [data-theme="dark"] .context-menu { background: var(--card); border-color: var(--border); }
       `}</style>
 
       <div className="forum-container">

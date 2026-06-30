@@ -77,7 +77,7 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           to { opacity: 1; transform: translateY(0); }
         }
         .login-box {
-          background: rgba(255, 255, 255, 0.95);
+          background: var(--card, rgba(255, 255, 255, 0.95));
           backdrop-filter: blur(20px);
           border-radius: 20px;
           padding: 28px 24px;
@@ -87,7 +87,7 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           animation: loginSlideUp 0.4s ease-out;
           margin: 12px 0 32px;
           position: relative;
-          border: 1px solid rgba(255, 255, 255, 0.8);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.8));
         }
         .login-logo {
           text-align: center;
@@ -133,7 +133,7 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           padding: 12px 8px;
           border: 2px solid var(--border, #e2e8f0);
           border-radius: 12px;
-          background: white;
+          background: var(--card, white);
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           text-align: center;
@@ -195,7 +195,7 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           padding: 10px;
           border: 2px solid var(--border, #e2e8f0);
           border-radius: 10px;
-          background: white;
+          background: var(--card, white);
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           text-align: center;
@@ -257,7 +257,7 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           padding: 12px 8px;
           border: 2px solid var(--border, #e2e8f0);
           border-radius: 12px;
-          background: white;
+          background: var(--card, white);
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           text-align: center;
@@ -338,7 +338,7 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           cursor: not-allowed;
         }
         .anon-note {
-          background: #f8fafc;
+          background: var(--bg, #f8fafc);
           border: 1px solid var(--border, #e2e8f0);
           border-radius: 8px;
           padding: 10px 12px;
@@ -362,6 +362,18 @@ export function LoginModal({ onLogin }: LoginModalProps) {
           text-align: center;
           width: 100%;
         }
+        /* Dark mode overrides */
+        [data-theme="dark"] .login-overlay {
+          background: linear-gradient(-45deg, #0B0D11 0%, #14161C 20%, #0F1115 40%, #1A1D24 60%, #0B0D11 80%, #14161C 100%);
+        }
+        [data-theme="dark"] .login-title { color: var(--text); }
+        [data-theme="dark"] .role-option:nth-child(2) .role-icon-wrapper { background: #3D1525; }
+        [data-theme="dark"] .anon-note { background: var(--card); }
+        [data-theme="dark"] .login-input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .login-input::placeholder { color: var(--muted); }
+        [data-theme="dark"] .role-name { color: var(--text); }
+        [data-theme="dark"] .gender-label, [data-theme="dark"] .role-label { color: var(--text); }
+        [data-theme="dark"] .gender-dot { border-color: var(--border); }
       `}</style>
 
       <div className="login-overlay">

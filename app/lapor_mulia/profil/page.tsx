@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { getReports, saveReports, getBilling } from '../lib/storage';
 import { getStatusColor } from '../lib/constants';
 import type { Report, ReportStatus } from '../lib/types';
+import { useAuth } from '../lib/auth-context';
 
 type ProfilModal = 'notifikasi' | 'pengaturan' | 'bantuan' | null;
 
 export default function ProfilPage() {
+  const { user, isAdmin, logout } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [activeModal, setActiveModal] = useState<ProfilModal>(null);
   const [adminCode, setAdminCode] = useState('');
@@ -186,10 +188,17 @@ export default function ProfilPage() {
 
       {/* Page Banner */}
       <div className={`layanan-banner ${isLoaded ? 'fade-in-up' : ''}`}>
-        <div className="profile-avatar" style={{width:80,height:80,fontSize:40,margin:'0 auto 16px'}}>M</div>
+        <div className="profile-avatar" style={{width:80,height:80,fontSize:40,margin:'0 auto 16px'}}>{user?.name?.charAt(0)?.toUpperCase() || '?'}</div>
         <div className="layanan-banner-content" style={{textAlign:'center'}}>
-          <h1>Mahasiswa</h1>
-          <p>NIM: 12345678 • Teknik Informatika</p>
+          <h1>{user?.name || 'Pengguna'}</h1>
+          <p>
+            {isAdmin()
+              ? 'Administrator'
+              : user?.nim
+                ? `NIM: ${user.nim} • ${user.faculty || '-'}`
+                : 'Pelaporan Anonim'
+            }
+          </p>
         </div>
         <div className="layanan-banner-stats">
           <div>
@@ -242,7 +251,7 @@ export default function ProfilPage() {
             </div>
             <div className="service-card-detailed-arrow">→</div>
           </button>
-          <button className={`service-card-detailed ${isLoaded ? 'slide-in-left stagger-5' : ''}`} onClick={() => window.alert('Anda telah keluar dari aplikasi.')} style={{borderColor:'var(--danger)'}}>
+          <button className={`service-card-detailed ${isLoaded ? 'slide-in-left stagger-5' : ''}`} onClick={logout} style={{borderColor:'var(--danger)'}}>
             <div className="service-card-detailed-icon" style={{background:'#FFEBEE',color:'var(--danger)'}}>🚪</div>
             <div className="service-card-detailed-content">
               <div className="service-card-detailed-name" style={{color:'var(--danger)'}}>Keluar</div>
@@ -257,25 +266,7 @@ export default function ProfilPage() {
       <section className="section">
         <div className="section-header"><h3>🔐 Admin Panel</h3></div>
         <div className="admin-section">
-          {!adminLoggedIn ? (
-            <div style={{display: 'grid', gap: 12, maxWidth: 320}}>
-              <div style={{fontSize:13,color:'var(--muted)',marginBottom:4}}>
-                Login sebagai admin untuk mengelola laporan mahasiswa.
-              </div>
-              <input
-                type="password"
-                placeholder="Kode admin"
-                value={adminCode}
-                onChange={(e) => setAdminCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && adminLogin()}
-                style={{padding: 12, border: '1.5px solid var(--border)', borderRadius: 12, fontSize: 13}}
-              />
-              <button className="btn-primary" type="button" onClick={adminLogin} style={{padding: 12, fontSize: 13}}>
-                🔐 Login Admin
-              </button>
-              <div className="helper">Demo: <b>admin123</b></div>
-            </div>
-          ) : (
+          {isAdmin() ? (
             <div>
               <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
                 <Link href="/lapor_mulia/admin" className="btn-primary" style={{padding:'10px 16px',fontSize:13,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6}}>
@@ -344,6 +335,15 @@ export default function ProfilPage() {
                 </Link>
               )}
             </div>
+          ) : (
+            <div style={{display: 'grid', gap: 12, maxWidth: 320}}>
+              <div style={{fontSize:13,color:'var(--muted)',marginBottom:4}}>
+                Masuk sebagai admin untuk mengelola laporan mahasiswa.
+              </div>
+              <Link href="/lapor_mulia/admin" className="btn-primary" style={{padding: 12, fontSize: 13, textAlign:'center', textDecoration:'none'}}>
+                🔐 Login Admin
+              </Link>
+            </div>
           )}
         </div>
       </section>
@@ -384,15 +384,15 @@ export default function ProfilPage() {
               <div className="form-grid">
                 <div className="form-field full">
                   <label>Nama</label>
-                  <input type="text" defaultValue="Mahasiswa Universitas Mulia" />
+                  <input type="text" defaultValue={user?.name || ''} readOnly />
                 </div>
                 <div className="form-field">
                   <label>NIM</label>
-                  <input type="text" defaultValue="12345678" />
+                  <input type="text" defaultValue={user?.nim || '-'} readOnly />
                 </div>
                 <div className="form-field">
                   <label>Fakultas</label>
-                  <input type="text" defaultValue="Teknik Informatika" />
+                  <input type="text" defaultValue={user?.faculty || '-'} readOnly />
                 </div>
               </div>
             </div>

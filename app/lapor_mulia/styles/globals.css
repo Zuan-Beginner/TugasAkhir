@@ -106,7 +106,13 @@ textarea {
 }
 
 .page-content {
-  padding: 16px 0;
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 /* ===== MAIN WRAPPER ===== */
@@ -122,12 +128,13 @@ textarea {
   top: 0;
   bottom: 0;
   width: 260px;
-  background: white;
+  background: var(--card);
   box-shadow: 2px 0 20px rgba(0,0,0,0.06);
   padding: 24px 16px;
   z-index: 100;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   transform: translateX(-100%);
   opacity: 0;
   visibility: hidden;
@@ -579,6 +586,25 @@ textarea {
   font-size: 24px;
 }
 
+/* Active state for primary-action button (Lapor) */
+.bottom-nav a.primary-action.active {
+  box-shadow: 0 6px 20px rgba(15,52,96,0.35), 0 0 0 3px rgba(255,255,255,0.4);
+  transform: scale(1.08);
+}
+
+.bottom-nav a.primary-action.active::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(255,255,255,0.4);
+}
+
 /* Continue with remaining 800+ lines of CSS from the original file... */
 /* This is a minimal working version. The full extraction would include:
    - Hero Banner Carousel styles
@@ -884,7 +910,7 @@ textarea {
 }
 
 .hero-nav-btn:hover {
-  background: white;
+  background: var(--card);
   transform: translateY(-50%) scale(1.1);
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
@@ -929,7 +955,7 @@ textarea {
 .hero-dot.active {
   width: 28px;
   border-radius: 4px;
-  background: white;
+  background: var(--card);
   box-shadow: 0 2px 8px rgba(255,255,255,0.3);
 }
 
@@ -1344,7 +1370,7 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin-bottom: 8px;
@@ -1987,6 +2013,14 @@ textarea {
   font-weight: 800;
   margin-bottom: 6px;
   text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 480px) {
+  .layanan-banner-content h1 {
+    font-size: 22px;
+  }
 }
 
 .layanan-banner-content p {
@@ -2001,6 +2035,15 @@ textarea {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+@media (max-width: 480px) {
+  .layanan-banner-stats {
+    gap: 12px;
+  }
+  .layanan-banner-stats strong {
+    font-size: 22px;
+  }
 }
 
 .layanan-banner-stats div {
@@ -2027,7 +2070,7 @@ textarea {
   position: relative;
   display: flex;
   align-items: center;
-  background: white;
+  background: var(--card);
   border: 2px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 14px 16px;
@@ -2090,7 +2133,7 @@ textarea {
 }
 
 .category-filter-card {
-  background: white;
+  background: var(--card);
   border: 2px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px 12px;
@@ -2121,6 +2164,12 @@ textarea {
   border-color: var(--accent);
   background: var(--accent-light);
   box-shadow: 0 4px 12px rgba(30,136,229,0.2);
+}
+.category-filter-card.active .category-filter-icon {
+  transform: scale(1.15);
+}
+.category-filter-card.active .category-filter-label {
+  font-weight: 800;
 }
 
 .category-filter-card:hover {
@@ -2156,7 +2205,7 @@ textarea {
 }
 
 .category-filter-card.active .category-filter-count {
-  background: white;
+  background: var(--card);
   color: var(--accent);
 }
 
@@ -2168,7 +2217,7 @@ textarea {
 }
 
 .service-card-detailed {
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px;
@@ -2258,7 +2307,7 @@ textarea {
 }
 
 .layanan-card-simple {
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px;
@@ -2375,7 +2424,7 @@ textarea {
 
 /* ===== LAPOR PAGE ===== */
 .category-selection-card {
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px;
@@ -2418,7 +2467,7 @@ textarea {
 }
 
 .category-card-lapor {
-  background: white;
+  background: var(--card);
   border: 2px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px;
@@ -2439,7 +2488,16 @@ textarea {
 .category-card-lapor.active {
   border-color: var(--primary);
   background: var(--primary-light);
-  box-shadow: 0 4px 16px rgba(15,52,96,0.15);
+  box-shadow: 0 0 0 3px rgba(15,52,96,0.15), 0 8px 24px rgba(15,52,96,0.2);
+  border-width: 3px;
+}
+.category-card-lapor.active .category-card-icon {
+  transform: scale(1.15);
+  box-shadow: 0 4px 16px rgba(15,52,96,0.25);
+}
+.category-card-lapor.active .category-card-name {
+  color: var(--primary);
+  font-weight: 800;
 }
 
 .category-card-icon {
@@ -2480,7 +2538,7 @@ textarea {
 }
 
 .form-section-modern {
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px;
@@ -2511,7 +2569,7 @@ textarea {
 }
 
 .recent-report-card {
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 18px;
@@ -2810,6 +2868,70 @@ input, select, textarea {
 
 /* Status pill with a hardcoded light tint */
 [data-theme="dark"] .report-status.pending { background: rgba(255,152,0,0.18); }
+
+/* Hero navigation buttons — semi-transparent white needs dark override */
+[data-theme="dark"] .hero-nav-btn { background: rgba(26,29,36,0.9); }
+[data-theme="dark"] .hero-nav-btn:hover { background: var(--card); }
+
+/* Sidebar shadow for dark mode */
+[data-theme="dark"] .sidebar-nav { box-shadow: 2px 0 20px rgba(0,0,0,0.3); }
+
+/* Sidebar active state — var(--primary) is too dark in dark mode, use accent instead */
+[data-theme="dark"] .sidebar-nav-item.active {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+[data-theme="dark"] .sidebar-nav-item.active::before {
+  background: var(--accent);
+}
+[data-theme="dark"] .sidebar-nav-item.active .sidebar-nav-icon svg {
+  stroke: var(--accent);
+}
+
+/* Login type / gender / role selector buttons */
+[data-theme="dark"] .login-type-btn,
+[data-theme="dark"] .gender-option,
+[data-theme="dark"] .role-option { background: var(--card); border-color: var(--border); }
+[data-theme="dark"] .login-type-btn.selected,
+[data-theme="dark"] .gender-option.selected,
+[data-theme="dark"] .role-option.selected {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+/* Forum & admin containers */
+[data-theme="dark"] .forum-container,
+[data-theme="dark"] .admin-container,
+[data-theme="dark"] .admin-table-wrap { background: var(--card); }
+
+/* Stat card dark gradients */
+[data-theme="dark"] .stat-card-modern:nth-child(1) { background: linear-gradient(135deg, #1A2744 0%, #1E3A5F 100%) !important; }
+[data-theme="dark"] .stat-card-modern:nth-child(2) { background: linear-gradient(135deg, #3D2200 0%, #4A2800 100%) !important; }
+[data-theme="dark"] .stat-card-modern:nth-child(3) { background: linear-gradient(135deg, #1A3320 0%, #2E4A2E 100%) !important; }
+[data-theme="dark"] .stat-card-modern:nth-child(4) { background: linear-gradient(135deg, #3D1525 0%, #4A1A30 100%) !important; }
+
+/* Service card icons — darken hex backgrounds for dark */
+[data-theme="dark"] .svc-icon { filter: brightness(0.6) saturate(0.8); }
+[data-theme="dark"] .service-card { border-color: var(--border); }
+
+/* Report status badges — ensure contrast */
+[data-theme="dark"] .report-status { color: var(--text); }
+[data-theme="dark"] .report-status.done { background: rgba(76,175,80,0.18); }
+[data-theme="dark"] .report-status.rejected { background: rgba(229,57,53,0.18); }
+
+/* Message boxes */
+[data-theme="dark"] .message-box.success { background: rgba(76,175,80,0.15); }
+[data-theme="dark"] .message-box.error { background: rgba(229,57,53,0.15); }
+
+/* Billing status */
+[data-theme="dark"] .billing-status.lunas { background: rgba(76,175,80,0.15); }
+[data-theme="dark"] .billing-status.belum { background: rgba(229,57,53,0.15); }
+
+/* Delete buttons with light backgrounds */
+[data-theme="dark"] .small-btn.delete { background: rgba(229,57,53,0.15); }
+
+/* Inline-style status badges with hardcoded light backgrounds */
+[data-theme="dark"] .report-status { background: rgba(30,136,229,0.18) !important; color: var(--text) !important; }
 
 /* Theme toggle button in the header */
 .theme-toggle {

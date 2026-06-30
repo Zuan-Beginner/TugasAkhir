@@ -225,7 +225,7 @@ export default function AdminPage() {
             width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px;
             font-size: 14px; outline: none; background: #FAFBFC;
           }
-          .login-field input:focus { border-color: var(--primary); background: white; }
+          .login-field input:focus { border-color: var(--primary); background: var(--card); }
           .login-btn {
             width: 100%; padding: 14px; border: none; border-radius: 14px;
             background: var(--primary); color: white; font-weight: 800; font-size: 15px;
@@ -242,6 +242,18 @@ export default function AdminPage() {
             display: inline-block; margin-top: 16px; font-size: 13px; color: var(--accent);
             font-weight: 600; text-decoration: none;
           }
+          /* Dark mode overrides for login */
+          [data-theme="dark"] :root {
+            --bg: #0F1115; --card: #1A1D24; --text: #ECEDEE; --muted: #9BA1A6;
+            --border: #2A2E37; --primary-light: #2A1419;
+          }
+          [data-theme="dark"] body { background: #0F1115; }
+          [data-theme="dark"] .login-card { background: var(--card); }
+          [data-theme="dark"] .login-title { color: var(--text); }
+          [data-theme="dark"] .login-field input { background: var(--card); color: var(--text); border-color: var(--border); }
+          [data-theme="dark"] .login-field input:focus { background: var(--card); }
+          [data-theme="dark"] .login-field label { color: var(--text); }
+          [data-theme="dark"] .login-error { background: #3D1520; }
         `}</style>
         <div className="login-page">
           <div className="login-card">
@@ -329,11 +341,11 @@ export default function AdminPage() {
           border-radius: 12px; font-size: 14px; outline: none; background: var(--bg);
           transition: all 0.2s;
         }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123, 16, 35, 0.1); background: white; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123, 16, 35, 0.1); background: var(--card); }
         .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
         .filter-tab {
           padding: 10px 16px; border-radius: 10px; border: 2px solid var(--border); font-size: 13px;
-          font-weight: 700; cursor: pointer; background: white; color: var(--text);
+          font-weight: 700; cursor: pointer; background: var(--card); color: var(--text);
           transition: all 0.2s; white-space: nowrap;
         }
         .filter-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
@@ -348,7 +360,7 @@ export default function AdminPage() {
         }
         .toolbar-btn {
           padding: 10px 16px; border: 2px solid var(--border); border-radius: 10px;
-          background: white; font-size: 13px; font-weight: 700; cursor: pointer;
+          background: var(--card); font-size: 13px; font-weight: 700; cursor: pointer;
           transition: all 0.2s; display: flex; align-items: center; gap: 8px;
         }
         .toolbar-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
@@ -406,7 +418,7 @@ export default function AdminPage() {
 
         .status-select {
           padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border);
-          font-size: 12px; font-weight: 600; cursor: pointer; background: white;
+          font-size: 12px; font-weight: 600; cursor: pointer; background: var(--card);
         }
         .status-select:focus { border-color: var(--primary); outline: none; }
 
@@ -432,7 +444,7 @@ export default function AdminPage() {
         }
         .page-btn {
           width: 36px; height: 36px; border: 2px solid var(--border); border-radius: 8px;
-          background: white; cursor: pointer; font-size: 13px; font-weight: 700;
+          background: var(--card); cursor: pointer; font-size: 13px; font-weight: 700;
           transition: all 0.2s; display: grid; place-items: center;
         }
         .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
@@ -544,6 +556,38 @@ export default function AdminPage() {
           .toolbar { flex-direction: column; }
           .detail-grid { grid-template-columns: 1fr; }
         }
+
+        /* Dark mode overrides */
+        [data-theme="dark"] :root {
+          --bg: #0F1115; --card: #1A1D24; --text: #ECEDEE; --muted: #9BA1A6;
+          --border: #2A2E37; --primary-light: #2A1419;
+        }
+        [data-theme="dark"] body { background: #0F1115; }
+        [data-theme="dark"] .login-card { background: var(--card); }
+        [data-theme="dark"] .login-field input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .login-field input:focus { background: var(--card); }
+        [data-theme="dark"] .login-field label { color: var(--text); }
+        [data-theme="dark"] .admin-container { color: var(--text); }
+        [data-theme="dark"] .stat-box { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .toolbar { background: var(--card); }
+        [data-theme="dark"] .search-input { background: var(--bg); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .search-input:focus { background: var(--card); }
+        [data-theme="dark"] .filter-tab { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .toolbar-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .table-card { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] th { background: var(--primary-light); color: var(--text); }
+        [data-theme="dark"] tbody tr:hover { background: var(--bg); }
+        [data-theme="dark"] .status-select { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .page-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .modal-box { background: var(--card); }
+        [data-theme="dark"] .confirm-box { background: var(--card); }
+        [data-theme="dark"] .detail-item { background: var(--bg); }
+        [data-theme="dark"] .detail-desc { background: var(--bg); }
+        [data-theme="dark"] .detail-actions .btn-delete { background: #3D1520; }
+        [data-theme="dark"] .action-btn.view { background: #1A2744; }
+        [data-theme="dark"] .action-btn.delete { background: #3D1520; }
+        [data-theme="dark"] .pagination { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .page-input { background: var(--card); color: var(--text); border-color: var(--border); }
       `}</style>
 
       <div className="admin-container">
