@@ -13,6 +13,9 @@ export function LoginModal({ onLogin }: LoginModalProps) {
   const [userPassword, setUserPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<'admin' | 'user'>('user');
   const [selectedGender, setSelectedGender] = useState<'laki' | 'perempuan'>('laki');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const isAdminRole = selectedRole === 'admin';
 

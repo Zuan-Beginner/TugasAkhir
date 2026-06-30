@@ -1,647 +1,300 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { getReports, getAnnouncements, getBilling } from './lib/storage';
-import { heroImages, defaultSchedule, getStatusColor, getStatusStep, defaultContacts } from './lib/constants';
-import { Modal, StatGrid, EmptyState, ReportChart } from './components';
-import type { Announcement, BillingItem, ModalType, Report, ReportStatus } from './lib/types';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from './lib/auth-context';
 
-export default function BerandaPage() {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [billing, setBilling] = useState<BillingItem[]>([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [showReportDetail, setShowReportDetail] = useState<Report | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+const avatarEmojis = ['👨', '👩', '🧑', '👨‍🎓', '👩‍🎓', '👨‍💼', '👩‍💼', '🧑‍💼', '👨‍🏫', '👩‍🏫'];
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_MULIA_ADMIN_PASSWORD ?? '';
 
-  useEffect(() => {
-    setReports(getReports());
-    setAnnouncements(getAnnouncements());
-    setBilling(getBilling());
-    setTimeout(() => setIsLoaded(true), 100);
-  }, []);
+export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<'user' | 'admin'>('user');
+  const [name, setName] = useState('');
+  const [nim, setNim] = useState('');
+  const [password, setPassword] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState(avatarEmojis[0]);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
+  function handleSubmit() {
+    setError('');
+    if (selectedRole === 'user') {
+      if (!name.trim() || !nim.trim()) {
+        setError('NIM dan Nama harus diisi.');
+        return;
+      }
+      login({ name: name.trim(), nim: nim.trim(), role: 'user', avatar: selectedAvatar });
+      router.push('/lapor_mulia/home');
+      return;
+    }
 
-  function prevSlide() {
-    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
+    if (!name.trim() || !password.trim()) {
+      setError('Nama dan Password admin harus diisi.');
+      return;
+    }
+
+    if (password.trim() !== ADMIN_PASSWORD) {
+      setError('Password admin salah.');
+      return;
+    }
+
+    login({ name: name.trim() || 'Admin', role: 'admin', avatar: selectedAvatar, nim: nim.trim() || undefined });
+    router.push('/lapor_mulia/admin');
   }
-  function nextSlide() {
-    setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-  }
-
-  const dashboardCounts = useMemo(() => ({
-    all: reports.length,
-    sent: reports.filter((r) => r.status === 'Terkirim').length,
-    process: reports.filter((r) => r.status === 'Diproses').length,
-    done: reports.filter((r) => r.status === 'Selesai').length,
-  }), [reports]);
-
-  const recentReports = useMemo(() => reports.slice(0, 5), [reports]);
-  const unpaidCount = useMemo(() => billing.filter((b) => b.status !== 'Lunas').length, [billing]);
-
-  const services = [
-    { icon: '📢', name: 'Pengumuman', modal: 'pengumuman' as ModalType, bg: '#E3F2FD' },
-    { icon: '📋', name: 'Pengaduan', modal: null, href: '/lapor_mulia/lapor', bg: '#FDF2F4' },
-    { icon: '💰', name: 'Keuangan', modal: 'keuangan' as ModalType, bg: '#FFF3E0' },
-    { icon: '🚨', name: 'Darurat', modal: 'darurat' as ModalType, bg: '#FFEBEE' },
-    { icon: '📅', name: 'Jadwal', modal: 'jadwal' as ModalType, bg: '#E8F5E9' },
-    { icon: '📖', name: 'Perpustakaan', modal: 'perpustakaan' as ModalType, bg: '#F3E5F5' },
-    { icon: '🏢', name: 'Direktori', modal: 'direktori' as ModalType, bg: '#E0F7FA' },
-    { icon: '📚', name: 'E-Learning', modal: 'elearning' as ModalType, bg: '#FBE9E7' },
-  ];
 
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
+        .login-page-wrapper {
+          min-height: 100vh;
+          background: linear-gradient(135deg, var(--bg) 0%, var(--bg-card) 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        @keyframes slideUp {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-        .fade-in-up {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-left {
-          animation: slideInLeft 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-right {
-          animation: slideInRight 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .scale-in {
-          animation: scaleIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
-        .stagger-6 { animation-delay: 0.6s; }
-        .stagger-7 { animation-delay: 0.7s; }
-        .stagger-8 { animation-delay: 0.8s; }
-        
-        .hero-banner {
-          position: relative;
-          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .hero-text {
-          animation: fadeInUp 1s ease-out 0.3s forwards;
-          opacity: 0;
-        }
-        .quick-actions {
-          transition: all 0.3s ease;
-        }
-        .quick-action-btn {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .quick-action-btn:hover {
-          transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 12px 24px rgba(123, 16, 35, 0.15);
-        }
-        .quick-action-btn:active {
-          transform: translateY(-2px) scale(0.98);
-        }
-        .service-card {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-        }
-        .service-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
+        .login-box {
+          background: white;
+          border-radius: 24px;
+          padding: 40px;
+          max-width: 480px;
           width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-          transition: left 0.5s;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+          animation: slideUp 0.5s ease-out;
         }
-        .service-card:hover::before {
-          left: 100%;
+        [data-theme='dark'] .login-box {
+          background: var(--bg-card);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-        .service-card:hover {
-          transform: translateY(-8px) rotate(1deg);
-          box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+        .login-logo {
+          text-align: center;
+          font-size: 64px;
+          margin-bottom: 16px;
         }
-        .service-card:hover .svc-icon {
-          transform: scale(1.2) rotate(10deg);
+        .login-title {
+          font-size: 28px;
+          font-weight: 800;
+          text-align: center;
+          margin-bottom: 8px;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
-        .svc-icon {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .login-subtitle {
+          font-size: 14px;
+          color: var(--muted);
+          text-align: center;
+          margin-bottom: 32px;
         }
-        .announce-card {
-          transition: all 0.3s ease;
-          position: relative;
+        .login-input {
+          width: 100%;
+          padding: 14px 16px;
+          border: 2px solid var(--border);
+          border-radius: 12px;
+          font-size: 15px;
+          outline: none;
+          margin-bottom: 20px;
+          transition: all 0.3s;
+          background: var(--bg);
+          color: var(--text);
         }
-        .announce-card:hover {
-          transform: translateX(8px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        .login-input:focus {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 4px rgba(123, 16, 35, 0.1);
         }
-        .announce-card::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          background: linear-gradient(180deg, var(--primary), var(--accent));
-          transform: scaleY(0);
-          transition: transform 0.3s;
+        .role-selector {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 24px;
         }
-        .announce-card:hover::before {
-          transform: scaleY(1);
+        .role-option {
+          padding: 16px;
+          border: 3px solid var(--border);
+          border-radius: 16px;
+          background: var(--bg-card);
+          cursor: pointer;
+          transition: all 0.3s;
+          text-align: center;
+          color: var(--text);
         }
-        .schedule-item {
-          transition: all 0.3s ease;
+        .role-option:hover {
+          border-color: var(--primary);
+          transform: translateY(-2px);
         }
-        .schedule-item:hover {
-          transform: translateX(8px);
-          background: var(--primary-light);
+        .role-option.selected {
+          border-color: var(--primary);
+          background: linear-gradient(135deg, var(--primary-light), var(--bg-card));
+          box-shadow: 0 4px 12px rgba(123, 16, 35, 0.1);
         }
-        .schedule-item:hover .schedule-date {
-          transform: scale(1.1) rotate(-5deg);
+        .role-icon {
+          font-size: 32px;
+          margin-bottom: 8px;
         }
-        .schedule-date {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .role-name {
+          font-size: 15px;
+          font-weight: 700;
+          margin-bottom: 4px;
         }
-        .service-card-detailed {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
+        .role-desc {
+          font-size: 12px;
+          color: var(--muted);
         }
-        .service-card-detailed:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+        .avatar-section-title {
+          font-size: 13px;
+          font-weight: 700;
+          margin-bottom: 12px;
+          color: var(--text);
         }
-        .service-card-detailed:hover .service-card-detailed-arrow {
-          transform: translateX(8px);
+        .avatar-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 10px;
+          margin-bottom: 32px;
         }
-        .service-card-detailed-arrow {
-          transition: transform 0.3s ease;
+        .avatar-option {
+          width: 100%;
+          aspect-ratio: 1;
+          border-radius: 50%;
+          border: 3px solid var(--border);
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          display: grid;
+          place-items: center;
+          font-size: 28px;
+          cursor: pointer;
+          transition: all 0.3s;
         }
-        .service-card-detailed-icon {
-          transition: all 0.3s ease;
+        .avatar-option:hover {
+          transform: scale(1.15) rotate(10deg);
+          border-color: var(--primary);
         }
-        .service-card-detailed:hover .service-card-detailed-icon {
-          transform: scale(1.15) rotate(5deg);
-        }
-        .hero-nav-btn {
-          transition: all 0.3s ease;
-        }
-        .hero-nav-btn:hover {
+        .avatar-option.selected {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 4px rgba(123, 16, 35, 0.2);
           transform: scale(1.1);
-          background: rgba(123, 16, 35, 0.95);
         }
-        .hero-dot {
-          transition: all 0.3s ease;
+        .login-btn {
+          width: 100%;
+          padding: 16px;
+          border: none;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: white;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
         }
-        .hero-dot:hover {
-          transform: scale(1.3);
+        .login-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(123, 16, 35, 0.4);
         }
-        .contact-card,
-        .billing-card {
-          transition: all 0.3s ease;
+        .login-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
-        .contact-card:hover,
-        .billing-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .stat-card {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .stat-card:hover {
-          transform: translateY(-6px) scale(1.02);
-          box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+        .error-message {
+          color: var(--danger, #E53935);
+          font-size: 14px;
+          text-align: center;
+          margin-bottom: 16px;
+          background: rgba(229, 57, 53, 0.1);
+          padding: 8px;
+          border-radius: 8px;
         }
       `}</style>
-      {/* Hero Carousel */}
-      <div className={`hero-banner ${isLoaded ? 'fade-in-up' : ''}`}>
-        <div className="hero-slider" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-          {heroImages.map((src, i) => (
-            <div key={i} className="hero-slide">
-              <img src={src} alt={`Gedung Universitas Mulia Balikpapan ${i + 1}`} />
+
+      <div className="login-page-wrapper">
+        <div className="login-box">
+          <div className="login-logo">🏛️</div>
+          <h1 className="login-title">Mulia Lapor</h1>
+          <p className="login-subtitle">Sistem Pengaduan & Layanan Kampus Terpadu</p>
+
+          <div className="role-selector">
+            <div
+              className={`role-option ${selectedRole === 'user' ? 'selected' : ''}`}
+              onClick={() => { setSelectedRole('user'); setError(''); }}
+            >
+              <div className="role-icon">👨‍🎓</div>
+              <div className="role-name">User</div>
+              <div className="role-desc">Mahasiswa & Dosen</div>
             </div>
-          ))}
-        </div>
-        <button className="hero-nav-btn left" type="button" onClick={prevSlide} aria-label="Sebelumnya">❮</button>
-        <button className="hero-nav-btn right" type="button" onClick={nextSlide} aria-label="Selanjutnya">❯</button>
-        <div className="hero-dots">
-          {heroImages.map((_, i) => (
-            <button key={i} className={`hero-dot ${i === currentSlide ? 'active' : ''}`} type="button" onClick={() => setCurrentSlide(i)} aria-label={`Slide ${i + 1}`} />
-          ))}
-        </div>
-        <div className="hero-text">
-          <h3>🏛️ Universitas Mulia</h3>
-          <p>Sistem Pengaduan & Layanan Kampus Terpadu</p>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-1' : ''}`}>
-        <div className="section-header">
-          <h3>Statistik Laporan</h3>
-          <Link href="/lapor_mulia/riwayat" style={{fontSize:'12px',color:'var(--accent)',fontWeight:700}}>Lihat Semua</Link>
-        </div>
-        <StatGrid items={[
-          { icon: '📋', num: dashboardCounts.all, label: 'Total' },
-          { icon: '📨', num: dashboardCounts.sent, label: 'Terkirim' },
-          { icon: '⏳', num: dashboardCounts.process, label: 'Diproses' },
-          { icon: '✅', num: dashboardCounts.done, label: 'Selesai' },
-        ]} />
-      </section>
-
-      {/* Quick Actions */}
-      <div className={`quick-actions ${isLoaded ? 'fade-in-up stagger-2' : ''}`}>
-        <Link href="/lapor_mulia/lapor" className="quick-action-btn"><span className="qa-icon">📝</span> Buat Laporan</Link>
-        <Link href="/lapor_mulia/riwayat" className="quick-action-btn"><span className="qa-icon">🔍</span> Cek Status</Link>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('pengumuman')}><span className="qa-icon">📢</span> Pengumuman</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('keuangan')}>
-          <span className="qa-icon">💰</span> Keuangan {unpaidCount > 0 && <span style={{background:'#FF9800',color:'white',padding:'2px 6px',borderRadius:'6px',fontSize:'10px'}}>{unpaidCount}</span>}
-        </button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('darurat')}><span className="qa-icon">🚨</span> Darurat</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('jadwal')}><span className="qa-icon">📅</span> Jadwal</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('perpustakaan')}><span className="qa-icon">📖</span> Perpustakaan</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('direktori')}><span className="qa-icon">🏢</span> Direktori</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('elearning')}><span className="qa-icon">📚</span> E-Learning</button>
-      </div>
-
-      {/* Service Grid */}
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-3' : ''}`}>
-        <div className="section-header"><h3>Layanan Kampus</h3></div>
-        <div className="service-grid">
-          {services.map((svc, idx) => (
-            svc.modal ? (
-              <button key={svc.name} className={`service-card ${isLoaded ? 'scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}} type="button" onClick={() => setActiveModal(svc.modal)}>
-                <div className="svc-icon" style={{ background: svc.bg }}>{svc.icon}</div>
-                <span className="svc-name">{svc.name}</span>
-              </button>
-            ) : (
-              <Link key={svc.name} href={svc.href!} className={`service-card ${isLoaded ? 'scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}}>
-                <div className="svc-icon" style={{ background: svc.bg }}>{svc.icon}</div>
-                <span className="svc-name">{svc.name}</span>
-              </Link>
-            )
-          ))}
-        </div>
-      </section>
-
-      {/* Pengumuman Terbaru */}
-      <section className={`section ${isLoaded ? 'slide-in-left stagger-4' : ''}`}>
-        <div className="section-header">
-          <h3>Pengumuman Terbaru</h3>
-          <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'12px',fontWeight:700,cursor:'pointer'}} onClick={() => setActiveModal('pengumuman')}>Lihat Semua</button>
-        </div>
-        <div className="announce-list">
-          {announcements.slice(0, 3).map((ann, idx) => (
-            <div key={ann.id} className={`announce-card ${ann.urgent ? 'urgent' : ''} ${isLoaded ? 'fade-in-up' : ''}`} style={{animationDelay: `${0.5 + idx * 0.1}s`}}>
-              <div className="announce-header">
-                <span className={`announce-badge ${ann.urgent ? 'urgent' : 'normal'}`}>{ann.urgent ? '🔴 Urgent' : '🔵 Info'}</span>
-                <span className="announce-date">{ann.date}</span>
-              </div>
-              <div className="announce-title">{ann.title}</div>
-              <div className="announce-content">{ann.content}</div>
-              <div className="announce-author">Oleh: {ann.author}</div>
+            <div
+              className={`role-option ${selectedRole === 'admin' ? 'selected' : ''}`}
+              onClick={() => { setSelectedRole('admin'); setError(''); }}
+            >
+              <div className="role-icon">👨‍💼</div>
+              <div className="role-name">Admin</div>
+              <div className="role-desc">Pengelola Sistem</div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Jadwal Mendatang */}
-      <section className={`section ${isLoaded ? 'slide-in-right stagger-5' : ''}`}>
-        <div className="section-header">
-          <h3>Jadwal Mendatang</h3>
-          <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'12px',fontWeight:700,cursor:'pointer'}} onClick={() => setActiveModal('jadwal')}>Lihat Semua</button>
-        </div>
-        <div className="schedule-list">
-          {defaultSchedule.slice(0, 3).map((sch, i) => (
-            <div key={i} className={`schedule-item ${isLoaded ? 'fade-in-up' : ''}`} style={{animationDelay: `${0.6 + i * 0.1}s`}}>
-              <div className="schedule-date">
-                <div className="day">{sch.date.split(' ')[0]}</div>
-                <div className="month">{sch.date.split(' ')[1]}</div>
-              </div>
-              <div className="schedule-info">
-                <div className="event">{sch.event}</div>
-                <div className="location">{sch.location}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Laporan Terakhir */}
-      {recentReports.length > 0 && (
-        <section className={`section ${isLoaded ? 'fade-in-up stagger-6' : ''}`}>
-          <div className="section-header">
-            <h3>Laporan Terakhir</h3>
-            <Link href="/lapor_mulia/riwayat" style={{fontSize:'12px',color:'var(--accent)',fontWeight:700}}>Lihat Semua</Link>
           </div>
-          <div className="service-grid-modern">
-            {recentReports.map((report, idx) => (
-              <button 
-                key={report.ticket} 
-                className={`service-card-detailed ${isLoaded ? 'scale-in' : ''}`}
-                style={{animationDelay: `${0.7 + idx * 0.08}s`}}
-                onClick={() => setShowReportDetail(report)}
+
+          {error && <div className="error-message">{error}</div>}
+
+          {selectedRole === 'user' ? (
+            <>
+              <input
+                className="login-input"
+                type="text"
+                placeholder="NIM"
+                value={nim}
+                onChange={(e) => setNim(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              />
+              <input
+                className="login-input"
+                type="text"
+                placeholder="Nama Lengkap"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              />
+            </>
+          ) : (
+            <>
+              <input
+                className="login-input"
+                type="text"
+                placeholder="Nama Admin"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              />
+              <input
+                className="login-input"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              />
+            </>
+          )}
+
+          <div className="avatar-section-title">Pilih Avatar:</div>
+          <div className="avatar-grid">
+            {avatarEmojis.map((emoji) => (
+              <div
+                key={emoji}
+                className={`avatar-option ${selectedAvatar === emoji ? 'selected' : ''}`}
+                onClick={() => setSelectedAvatar(emoji)}
               >
-                <div className="service-card-detailed-icon" style={{ background: getStatusColor(report.status) + '20', color: getStatusColor(report.status) }}>
-                  {report.status === 'Terkirim' && '📨'}
-                  {report.status === 'Diproses' && '⏳'}
-                  {report.status === 'Selesai' && '✅'}
-                  {report.status === 'Ditolak' && '❌'}
-                </div>
-                <div className="service-card-detailed-content">
-                  <div className="service-card-detailed-name">{report.title}</div>
-                  <div className="service-card-detailed-desc">
-                    {report.ticket} • {report.category} • {report.location}
-                  </div>
-                </div>
-                <div className="service-card-detailed-arrow">→</div>
-                <div className="service-card-detailed-badge">{report.status}</div>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Modals */}
-      <Modal isOpen={activeModal === 'pengumuman'} onClose={() => setActiveModal(null)} title="Pengumuman" icon="📢">
-        <div className="announce-list">
-          {announcements.map((ann) => (
-            <div key={ann.id} className={`announce-card ${ann.urgent ? 'urgent' : ''}`}>
-              <div className="announce-header">
-                <span className={`announce-badge ${ann.urgent ? 'urgent' : 'normal'}`}>{ann.urgent ? '🔴 Urgent' : '🔵 Info'}</span>
-                <span className="announce-date">{ann.date}</span>
-              </div>
-              <div className="announce-title">{ann.title}</div>
-              <div className="announce-content">{ann.content}</div>
-              <div className="announce-author">Oleh: {ann.author}</div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'keuangan'} onClose={() => setActiveModal(null)} title="Keuangan" icon="💰">
-        <div style={{marginBottom:12,padding:12,background:'#FFF3E0',borderRadius:12,fontSize:13,fontWeight:700}}>
-          Tagihan belum dibayar: <span style={{color:'var(--warning)'}}>{unpaidCount}</span>
-        </div>
-        <div className="billing-list">
-          {billing.map((b) => (
-            <div key={b.id} className="billing-card">
-              <div className="billing-top">
-                <div className="billing-name">{b.name}</div>
-                <div className="billing-amount">{b.amount}</div>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span className={`billing-status ${b.status === 'Lunas' ? 'lunas' : 'belum'}`}>{b.status}</span>
-                <span className="billing-due">Jatuh tempo: {b.dueDate}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'darurat'} onClose={() => setActiveModal(null)} title="Kontak Darurat" icon="🚨">
-        <div className="contact-list">
-          {defaultContacts.map((c, i) => (
-            <div key={i} className="contact-card">
-              <div className="contact-icon">{c.icon}</div>
-              <div className="contact-info">
-                <div className="name">{c.name}</div>
-                <div className="role">{c.role} • {c.phone}</div>
-              </div>
-              <a href={`tel:${c.phone.replace(/[^0-9+]/g, '')}`} className="contact-call">📞 Hubungi</a>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'jadwal'} onClose={() => setActiveModal(null)} title="Jadwal Akademik" icon="📅">
-        <div className="schedule-list">
-          {defaultSchedule.map((sch, i) => (
-            <div key={i} className="schedule-item">
-              <div className="schedule-date">
-                <div className="day">{sch.date.split(' ')[0]}</div>
-                <div className="month">{sch.date.split(' ')[1]}</div>
-              </div>
-              <div className="schedule-info">
-                <div className="event">{sch.event}</div>
-                <div className="location">{sch.location}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'perpustakaan'} onClose={() => setActiveModal(null)} title="Perpustakaan" icon="📖">
-        <div style={{marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Jam Operasional</div>
-          <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.6}}>
-            Senin - Jumat: 08:00 - 16:00<br/>
-            Sabtu: 08:00 - 12:00<br/>
-            Minggu & Hari Libur: Tutup
-          </div>
-        </div>
-        <div style={{marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Buku Sedang Dipinjam</div>
-          <div className="report-list">
-            {[
-              { title: 'Pemrograman Web Lanjut', due: '30 Jun 2026', status: 'Dipinjam' },
-              { title: 'Basis Data Relasional', due: '05 Jul 2026', status: 'Dipinjam' },
-            ].map((book, i) => (
-              <div key={i} className="report-card">
-                <div className="report-title">{book.title}</div>
-                <div className="report-meta"><span>📅 Kembali: {book.due}</span><span className="report-status" style={{background:'#E3F2FD',color:'var(--accent)'}}>{book.status}</span></div>
+                {emoji}
               </div>
             ))}
           </div>
+
+          <button className="login-btn" onClick={handleSubmit}>
+            {selectedRole === 'admin' ? '🔐 Masuk sebagai Admin' : '✨ Masuk sebagai User'}
+          </button>
         </div>
-        <div>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Cari Buku</div>
-          <div className="search-bar">
-            <input type="text" placeholder="Judul buku atau ISBN..." />
-            <button type="button">Cari</button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'direktori'} onClose={() => setActiveModal(null)} title="Direktori Kampus" icon="🏢">
-        <div className="contact-list">
-          {[
-            { name: 'BAAK', role: 'Biro Administrasi Akademik & Kemahasiswaan', phone: '(0541) 765-4322', icon: '📚' },
-            { name: 'Biro Keuangan', role: 'Pembayaran & Tagihan', phone: '(0541) 765-4323', icon: '💰' },
-            { name: 'Kemahasiswaan', role: 'Organisasi & Beasiswa', phone: '(0541) 765-4324', icon: '🎓' },
-            { name: 'Sarana Prasarana', role: 'Fasilitas & Perawatan', phone: '(0541) 765-4325', icon: '🔧' },
-          ].map((c, i) => (
-            <div key={i} className="contact-card">
-              <div className="contact-icon">{c.icon}</div>
-              <div className="contact-info">
-                <div className="name">{c.name}</div>
-                <div className="role">{c.role} • {c.phone}</div>
-              </div>
-              <a href={`tel:${c.phone.replace(/[^0-9+]/g, '')}`} className="contact-call">📞</a>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'elearning'} onClose={() => setActiveModal(null)} title="E-Learning" icon="📚">
-        <div className="report-list">
-          {[
-            { code: 'CS201', name: 'Pemrograman Web', lecturer: 'Dr. Ahmad', status: 'Aktif', progress: 75 },
-            { code: 'CS301', name: 'Basis Data', lecturer: 'Prof. Siti', status: 'Aktif', progress: 60 },
-            { code: 'CS302', name: 'Jaringan Komputer', lecturer: 'Dr. Budi', status: 'Aktif', progress: 45 },
-            { code: 'CS401', name: 'Kecerdasan Buatan', lecturer: 'Dr. Dewi', status: 'Selesai', progress: 100 },
-          ].map((course, i) => (
-            <div key={i} className="report-card">
-              <div className="report-card-top">
-                <span className="report-ticket">{course.code}</span>
-                <span className="report-status" style={{background: course.status === 'Aktif' ? '#E3F2FD' : '#E8F5E9', color: course.status === 'Aktif' ? 'var(--accent)' : 'var(--success)'}}>{course.status}</span>
-              </div>
-              <div className="report-title">{course.name}</div>
-              <div className="report-meta"><span>👨‍🏫 {course.lecturer}</span></div>
-              <div className="course-progress">
-                <div className="course-progress-bar" style={{width:`${course.progress}%`}} />
-              </div>
-              <div className="course-progress-text">{course.progress}% selesai</div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={!!showReportDetail} onClose={() => setShowReportDetail(null)} title="" icon="">
-        {showReportDetail && (
-          <>
-            {/* Detail Header */}
-            <div className="report-detail-header">
-              <div className="report-detail-ticket">{showReportDetail.ticket}</div>
-              <div className="report-detail-title">{showReportDetail.title}</div>
-              <div className="report-detail-status">
-                {showReportDetail.status === 'Terkirim' && '📨'}
-                {showReportDetail.status === 'Diproses' && '⏳'}
-                {showReportDetail.status === 'Selesai' && '✅'}
-                {showReportDetail.status === 'Ditolak' && '❌'}
-                {' '}{showReportDetail.status}
-              </div>
-            </div>
-
-            {/* Detail Body */}
-            <div className="report-detail-body">
-              {/* Deskripsi */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Deskripsi</div>
-                <div className="report-detail-desc">{showReportDetail.description}</div>
-              </div>
-
-              {/* Info Grid */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Informasi</div>
-                <div className="report-detail-info">
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Kategori</div>
-                    <div className="report-detail-info-value">📂 {showReportDetail.category}</div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Urgensi</div>
-                    <div className="report-detail-info-value">
-                      {showReportDetail.priority === 'Darurat' && '🔴'}
-                      {showReportDetail.priority === 'Tinggi' && '🟠'}
-                      {showReportDetail.priority === 'Sedang' && '🟡'}
-                      {showReportDetail.priority === 'Rendah' && '🟢'}
-                      {' '}{showReportDetail.priority}
-                    </div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Lokasi</div>
-                    <div className="report-detail-info-value">📍 {showReportDetail.location}</div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Pelapor</div>
-                    <div className="report-detail-info-value">👤 {showReportDetail.name}</div>
-                  </div>
-                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
-                    <div className="report-detail-info-label">Kontak</div>
-                    <div className="report-detail-info-value">📞 {showReportDetail.contact}</div>
-                  </div>
-                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
-                    <div className="report-detail-info-label">Tanggal</div>
-                    <div className="report-detail-info-value">📅 {showReportDetail.createdAt}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Status Timeline</div>
-                <div className="timeline">
-                  {(['Terkirim', 'Diproses', 'Selesai'] as ReportStatus[]).map((s, i) => {
-                    const current = getStatusStep(showReportDetail.status);
-                    const step = i + 1;
-                    return (
-                      <div key={s} className="timeline-step">
-                        <div className={`timeline-dot ${step < current ? 'done' : step === current ? 'active' : ''}`}>{step < current ? '✓' : step}</div>
-                        {i < 2 && <div className={`timeline-line ${step < current ? 'done' : step === current ? 'active' : ''}`} />}
-                        <div className="timeline-label">{s}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Ditolak Notice */}
-              {showReportDetail.status === 'Ditolak' && (
-                <div style={{padding:12,background:'#FFEBEE',borderRadius:12,fontSize:13,color:'var(--danger)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  ❌ Laporan ditolak oleh admin. Silakan hubungi BAAK untuk informasi lebih lanjut.
-                </div>
-              )}
-
-              {/* Selesai Notice */}
-              {showReportDetail.status === 'Selesai' && (
-                <div style={{padding:12,background:'#E8F5E9',borderRadius:12,fontSize:13,color:'var(--success)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  ✅ Laporan telah selesai ditangani. Terima kasih atas partisipasi Anda.
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </Modal>
+      </div>
     </>
   );
 }

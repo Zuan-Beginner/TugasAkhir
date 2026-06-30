@@ -8,13 +8,19 @@ type AuthUser = {
   name: string;
   role: UserRole;
   avatar: string;
-  gender: string;
+  nim?: string;
+};
+
+type LoginPayload = {
+  name: string;
+  role: UserRole;
+  avatar: string;
   nim?: string;
 };
 
 type AuthContextType = {
   user: AuthUser | null;
-  login: (name: string, role: UserRole, avatar: string, gender: string, nim?: string) => void;
+  login: (payload: LoginPayload) => void;
   logout: () => void;
   isAdmin: () => boolean;
 };
@@ -28,22 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load user from localStorage on mount
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(AUTH_STORAGE_KEY);
       if (saved) {
         try {
           setUser(JSON.parse(saved));
-        } catch (e) {
-          console.error('Failed to parse auth user:', e);
+        } catch {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
         }
       }
       setIsLoaded(true);
     }
   }, []);
 
-  const login = (name: string, role: UserRole, avatar: string, gender: string, nim?: string) => {
-    const newUser: AuthUser = { name, role, avatar, gender, nim };
+  const login = ({ name, role, avatar, nim }: LoginPayload) => {
+    const newUser: AuthUser = { name, role, avatar, nim };
     setUser(newUser);
     if (typeof window !== 'undefined') {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
@@ -57,9 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isAdmin = () => {
-    return user?.role === 'admin';
-  };
+  const isAdmin = () => user?.role === 'admin';
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAdmin }}>

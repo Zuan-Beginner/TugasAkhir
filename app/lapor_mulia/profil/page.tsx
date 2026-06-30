@@ -165,11 +165,11 @@ export default function ProfilPage() {
         }
       `}</style>
 
-      {/* Page Banner */}
       <div className={`layanan-banner ${isLoaded ? 'fade-in-up' : ''}`}>
+        <div className="profile-avatar" style={{width:80,height:80,fontSize:40,margin:'0 auto 16px'}}>{user?.avatar || 'M'}</div>
         <div className="layanan-banner-content" style={{textAlign:'center'}}>
           <h1>{user?.name || 'Pelapor'}</h1>
-          <p>{user?.role === 'admin' ? 'Administrator' : `Pelapor ${user?.gender === 'laki' ? 'Laki-laki' : 'Perempuan'}${user?.nim ? ` • NIM: ${user.nim}` : ''}`}</p>
+          <p>{user?.role === 'admin' ? 'Administrator' : `NIM: ${user?.nim || '-'}`}</p>
         </div>
         <div className="layanan-banner-stats">
           <div>
