@@ -124,7 +124,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = window.localStorage.getItem(THEME_KEY);
-    const initial = saved === 'dark' || saved === 'light' ? saved : 'light';
+    let initial: 'light' | 'dark';
+    if (saved === 'dark' || saved === 'light') {
+      initial = saved;
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      initial = 'dark';
+    } else {
+      initial = 'light';
+    }
     setTheme(initial);
     document.documentElement.setAttribute('data-theme', initial);
   }, []);

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getReports, saveReports, createTicketNumber, getDraft, saveDraft, clearDraft } from '../lib/storage';
 import { categories, priorities, initialForm } from '../lib/constants';
 import type { Report, ReportFormState } from '../lib/types';
+import { useAuth } from '../lib/auth-context';
 
 function isDraftWorthSaving(f: ReportFormState) {
   return Boolean(
@@ -15,6 +16,7 @@ function isDraftWorthSaving(f: ReportFormState) {
 
 export default function LaporPage() {
   const router = useRouter();
+  const { user, isAdmin } = useAuth();
   const [formData, setFormData] = useState<ReportFormState>(initialForm);
   const [message, setMessage] = useState({ text: '', type: '' as 'success' | 'error' | '' });
   const [recentReports, setRecentReports] = useState<Report[]>([]);
@@ -23,6 +25,10 @@ export default function LaporPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [submittedTicket, setSubmittedTicket] = useState('');
+  const [submittedCategory, setSubmittedCategory] = useState('');
+  const [submittedLocation, setSubmittedLocation] = useState('');
 
   useEffect(() => {
     const all = getReports();
@@ -44,6 +50,12 @@ export default function LaporPage() {
       setCurrentStep(1);
     }
   }, [formData.category]);
+
+  useEffect(() => {
+    if (!showSuccess) return;
+    const timer = setTimeout(() => router.push('/lapor_mulia/riwayat'), 5000);
+    return () => clearTimeout(timer);
+  }, [showSuccess, router]);
 
   // Auto-simpan draft setiap form berubah (setelah draft awal selesai dimuat).
   useEffect(() => {
@@ -77,10 +89,6 @@ export default function LaporPage() {
       setMessage({ text: 'Deskripsi minimal 10 karakter.', type: 'error' });
       return;
     }
-    if (!formData.agree) {
-      setMessage({ text: 'Centang "Data benar" untuk melanjutkan.', type: 'error' });
-      return;
-    }
     const report: Report = {
       ticket: createTicketNumber(),
       category: formData.category,
@@ -88,8 +96,8 @@ export default function LaporPage() {
       location: formData.location.trim(),
       title: formData.title.trim(),
       description: desc,
-      name: formData.anonymous ? 'Anonim' : formData.name.trim() || 'Tidak diisi',
-      contact: formData.anonymous ? 'Disembunyikan' : formData.contact.trim() || 'Tidak diisi',
+      name: user?.name || 'Anonim',
+      contact: isAdmin() ? 'Admin' : (user?.nim || 'Disembunyikan'),
       status: 'Terkirim',
       createdAt: new Date().toLocaleString('id-ID'),
     };
@@ -101,8 +109,10 @@ export default function LaporPage() {
     setDraftRestored(false);
     setRecentReports(next.slice(0, 3));
     setFormData(initialForm);
-    setMessage({ text: `Laporan terkirim! Tiket: ${report.ticket}`, type: 'success' });
-    setTimeout(() => router.push('/lapor_mulia/riwayat'), 2000);
+    setSubmittedTicket(report.ticket);
+    setSubmittedCategory(report.category);
+    setSubmittedLocation(report.location);
+    setShowSuccess(true);
   }
 
   return (
@@ -203,7 +213,14 @@ export default function LaporPage() {
           box-shadow: 0 16px 32px rgba(0,0,0,0.15);
         }
         .category-card-lapor.active {
-          animation: pulse 1.5s infinite;
+          animation: none;
+          border-width: 3px;
+          box-shadow: 0 0 0 3px rgba(15,52,96,0.15), 0 8px 24px rgba(15,52,96,0.2);
+          transform: scale(1.05);
+        }
+        .category-card-lapor.active .category-card-name {
+          color: var(--primary);
+          font-weight: 800;
         }
         .category-card-lapor:hover .category-card-icon {
           transform: scale(1.2) rotate(15deg);
@@ -315,6 +332,23 @@ export default function LaporPage() {
         }
         .toggle-label:hover {
           transform: translateX(4px);
+        }
+
+        @keyframes confettiFall {
+          0% { top: -5%; opacity: 1; transform: rotate(0deg) translateX(0); }
+          100% { top: 110%; opacity: 0; transform: rotate(720deg) translateX(var(--drift, 50px)); }
+        }
+        @keyframes successCardIn {
+          0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes checkCircle {
+          0% { stroke-dashoffset: 226; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes checkDraw {
+          0% { stroke-dashoffset: 50; }
+          100% { stroke-dashoffset: 0; }
         }
       `}</style>
       {/* Page Banner */}
@@ -429,29 +463,12 @@ export default function LaporPage() {
                 <input type="file" accept="image/*,.pdf" />
               </div>
               <div className="form-field full">
-                <div className="toggle-row">
-                  <label className="toggle-label">
-                    <input type="checkbox" checked={formData.anonymous} onChange={(e) => updateForm('anonymous', e.target.checked)} />
-                    🔒 Anonim
-                  </label>
-                  <label className="toggle-label">
-                    <input type="checkbox" required checked={formData.agree} onChange={(e) => updateForm('agree', e.target.checked)} />
-                    ✅ Data benar
-                  </label>
+                <div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 14px',background:'var(--primary-light)',borderRadius:10,fontSize:13,color:'var(--primary)',fontWeight:600}}>
+                  <span>👤</span>
+                  Laporan akan dikirim sebagai: <strong>{user?.name || 'Anonim'}</strong>
+                  {user?.nim && <span style={{color:'var(--muted)',fontWeight:400}}> (NIM: {user.nim})</span>}
                 </div>
               </div>
-              {!formData.anonymous && (
-                <>
-                  <div className="form-field">
-                    <label>Identitas</label>
-                    <input type="text" placeholder="Nama / NIM" value={formData.name} onChange={(e) => updateForm('name', e.target.value)} />
-                  </div>
-                  <div className="form-field">
-                    <label>Kontak</label>
-                    <input type="text" placeholder="Email / HP" value={formData.contact} onChange={(e) => updateForm('contact', e.target.value)} />
-                  </div>
-                </>
-              )}
             </div>
             <div className="helper" style={{marginTop: 8}}>
               Pastikan data yang diisi benar. Laporan anonim tidak dapat ditindaklanjuti secara langsung.
@@ -497,6 +514,70 @@ export default function LaporPage() {
             ))}
           </div>
         </section>
+      )}
+      {/* Success Overlay */}
+      {showSuccess && (
+        <div style={{
+          position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center',
+          background:'rgba(0,0,0,0.6)', backdropFilter:'blur(8px)',
+          animation:'fadeIn 0.3s ease-out',
+        }}>
+          {/* Confetti Particles */}
+          {Array.from({length: 30}).map((_, i) => (
+            <div key={i} style={{
+              position:'absolute',
+              width: `${Math.random() * 10 + 6}px`,
+              height: `${Math.random() * 10 + 6}px`,
+              background: ['#FF6B6B','#4ECDC4','#45B7D1','#FFA07A','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9'][i % 8],
+              borderRadius: i % 3 === 0 ? '50%' : i % 3 === 1 ? '2px' : '0',
+              left: `${Math.random() * 100}%`,
+              top: `-5%`,
+              animation: `confettiFall ${Math.random() * 2 + 2}s ease-in forwards`,
+              animationDelay: `${Math.random() * 0.5}s`,
+              transform: `rotate(${Math.random() * 360}deg)`,
+            }} />
+          ))}
+          {/* Success Card */}
+          <div style={{
+            background:'var(--card)', borderRadius:24, padding:'40px 32px', maxWidth:380, width:'100%',
+            textAlign:'center', position:'relative', zIndex:10,
+            boxShadow:'0 24px 64px rgba(0,0,0,0.3)',
+            animation:'successCardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+            opacity:0, transform:'scale(0.8)',
+          }}>
+            {/* Animated Checkmark */}
+            <div style={{margin:'0 auto 20px',width:80,height:80}}>
+              <svg viewBox="0 0 80 80" style={{width:'100%',height:'100%'}}>
+                <circle cx="40" cy="40" r="36" fill="none" stroke="#4CAF50" strokeWidth="4"
+                  strokeDasharray="226" strokeDashoffset="226"
+                  style={{animation:'checkCircle 0.6s ease-out 0.2s forwards'}} />
+                <path d="M24 40 L35 51 L56 30" fill="none" stroke="#4CAF50" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+                  strokeDasharray="50" strokeDashoffset="50"
+                  style={{animation:'checkDraw 0.4s ease-out 0.7s forwards'}} />
+              </svg>
+            </div>
+            <h2 style={{fontSize:22,fontWeight:800,margin:'0 0 8px',color:'var(--text)'}}>Laporan Berhasil Dikirim! 🎉</h2>
+            <p style={{fontSize:14,color:'var(--muted)',margin:'0 0 16px'}}>Terima kasih telah melaporkan masalah kampus</p>
+            <div style={{background:'var(--bg)',borderRadius:12,padding:'16px',marginBottom:20}}>
+              <div style={{fontSize:11,color:'var(--muted)',fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Nomor Tiket</div>
+              <div style={{fontSize:24,fontWeight:800,color:'var(--primary)',letterSpacing:1}}>{submittedTicket}</div>
+              <div style={{fontSize:12,color:'var(--muted)',marginTop:8}}>
+                📂 {submittedCategory} • 📍 {submittedLocation}
+              </div>
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={() => router.push('/lapor_mulia/riwayat')} style={{
+                flex:1,padding:'12px 16px',border:'none',borderRadius:12,background:'var(--primary)',color:'white',
+                fontSize:14,fontWeight:700,cursor:'pointer',transition:'all 0.2s',
+              }}>📋 Lihat Riwayat</button>
+              <button onClick={() => { setShowSuccess(false); setFormData(initialForm); }} style={{
+                flex:1,padding:'12px 16px',border:'2px solid var(--border)',borderRadius:12,background:'var(--card)',color:'var(--text)',
+                fontSize:14,fontWeight:700,cursor:'pointer',transition:'all 0.2s',
+              }}>✏️ Buat Baru</button>
+            </div>
+            <p style={{fontSize:11,color:'var(--muted)',marginTop:12}}>Auto-redirect ke riwayat dalam 5 detik...</p>
+          </div>
+        </div>
       )}
     </>
   );
