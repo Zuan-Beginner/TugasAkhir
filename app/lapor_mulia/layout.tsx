@@ -162,11 +162,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return 'Selamat Malam';
   }, []);
 
-  // Show login page if no user
-  const isLoginPage = pathname === '/lapor_mulia';
+  // Show login modal if no user
   if (!user) {
-    if (!isLoginPage) return null;
-    return <>{children}</>;
+    return null;
   }
 
   const isActive = (path: string) => pathname.startsWith(path);
@@ -291,6 +289,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             <span className="nav-label">Riwayat</span>
           </Link>
         </nav>
+      </div>
     </>
   );
 }
