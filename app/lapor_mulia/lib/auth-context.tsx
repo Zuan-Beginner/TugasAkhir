@@ -13,9 +13,18 @@ type AuthUser = {
   faculty?: string;
 };
 
+type LoginPayload = {
+  name: string;
+  role: UserRole;
+  avatar: string;
+  gender?: string;
+  nim?: string;
+  faculty?: string;
+};
+
 type AuthContextType = {
   user: AuthUser | null;
-  login: (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => void;
+  login: (payload: LoginPayload) => void;
   logout: () => void;
   isAdmin: () => boolean;
 };
@@ -34,15 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (saved) {
         try {
           setUser(JSON.parse(saved));
-        } catch (e) {
-          console.error('Failed to parse auth user:', e);
+        } catch {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
         }
       }
       setIsLoaded(true);
     }
   }, []);
 
-  const login = (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => {
+  const login = ({ name, role, avatar, gender, nim, faculty }: LoginPayload) => {
     const newUser: AuthUser = { name, role, avatar, gender, nim, faculty };
     setUser(newUser);
     if (typeof window !== 'undefined') {
@@ -57,9 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isAdmin = () => {
-    return user?.role === 'admin';
-  };
+  const isAdmin = () => user?.role === 'admin';
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAdmin }}>

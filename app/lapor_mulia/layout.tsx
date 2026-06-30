@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getReports } from './lib/storage';
 import type { Report } from './lib/types';
 import { AuthProvider, useAuth } from './lib/auth-context';
-import { LoginModal } from './components/LoginModal';
+import Modal from './components/Modal';
 import './styles/globals.css';
 
 const THEME_KEY = 'muliaTheme';
@@ -111,9 +111,12 @@ const StudentIcon = () => (
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, login, logout, isAdmin } = useAuth();
+  const router = useRouter();
+  const { user, logout, isAdmin } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     setReports(getReports());
@@ -127,6 +130,19 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     const initial = saved === 'dark' || saved === 'light' ? saved : 'light';
     setTheme(initial);
     document.documentElement.setAttribute('data-theme', initial);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePos({ x, y });
+      document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+      document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   const toggleTheme = () => {
@@ -146,14 +162,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return 'Selamat Malam';
   }, []);
 
+  // Show login modal if no user
   if (!user) {
-    return <LoginModal onLogin={login} />;
+    return null;
   }
 
-  const isActive = (path: string) => {
-    if (path === '/lapor_mulia') return pathname === '/lapor_mulia';
-    return pathname.startsWith(path);
-  };
+  const isActive = (path: string) => pathname.startsWith(path);
 
   return (
     <>
@@ -228,40 +242,54 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               >
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
-              <Link href="/lapor_mulia/profil" className="header-btn header-user-btn">
-                <span className="header-user-avatar">{user.name.charAt(0).toUpperCase()}</span>
+              <Link href="/lapor_mulia/profil" className="header-btn">
+                🔔
                 {reports.some((r) => r.status === 'Diproses') && <span className="badge-dot" />}
               </Link>
+              <Link href="/lapor_mulia/profil" className="header-btn" title={user.name}>{user.avatar}</Link>
+              <button
+                type="button"
+                className="header-btn"
+                onClick={logout}
+                title="Logout"
+                style={{background: 'transparent', border: 'none', cursor: 'pointer'}}
+              >
+                🚪
+              </button>
             </div>
+          </div>
+          <div className="greeting">
+            <h2>{greeting}, {user.name}! 👋</h2>
+            <p>{isAdmin() ? '🔐 Administrator' : '👨‍🎓 Mahasiswa'} • {user.role === 'admin' ? 'Pengelola Sistem' : 'Fakultas Teknik Informatika'}</p>
           </div>
         </header>
 
         <main className="page-content">{children}</main>
       </div>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="bottom-nav">
-        <Link href="/lapor_mulia" className={isActive('/lapor_mulia') && pathname === '/lapor_mulia' ? 'active' : ''}>
-          <span className="nav-icon"><HomeIcon /></span>
-          <span className="nav-label">Beranda</span>
-        </Link>
-        <Link href="/lapor_mulia/layanan" className={isActive('/lapor_mulia/layanan') ? 'active' : ''}>
-          <span className="nav-icon"><ClipboardIcon /></span>
-          <span className="nav-label">Layanan</span>
-        </Link>
-        <Link href="/lapor_mulia/lapor" className={`primary-action ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
-          <span className="nav-icon"><PlusIcon /></span>
-          <span className="nav-label">Lapor</span>
-        </Link>
-        <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
-          <span className="nav-icon"><MessageIcon /></span>
-          <span className="nav-label">Forum</span>
-        </Link>
-        <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
-          <span className="nav-icon"><ChartIcon /></span>
-          <span className="nav-label">Riwayat</span>
-        </Link>
-      </nav>
+        <nav className="bottom-nav">
+          <Link href="/lapor_mulia" className={isActive('/lapor_mulia') && pathname === '/lapor_mulia' ? 'active' : ''}>
+            <span className="nav-icon">🏠</span>
+            <span className="nav-label">Beranda</span>
+          </Link>
+          <Link href="/lapor_mulia/layanan" className={isActive('/lapor_mulia/layanan') ? 'active' : ''}>
+            <span className="nav-icon">📋</span>
+            <span className="nav-label">Layanan</span>
+          </Link>
+          <Link href="/lapor_mulia/lapor" className={`primary-action ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
+            <span className="nav-icon">➕</span>
+            <span className="nav-label">Lapor</span>
+          </Link>
+          <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
+            <span className="nav-icon">💬</span>
+            <span className="nav-label">Forum</span>
+          </Link>
+          <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
+            <span className="nav-icon">📊</span>
+            <span className="nav-label">Riwayat</span>
+          </Link>
+        </nav>
+      </div>
     </>
   );
 }
