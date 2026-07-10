@@ -1,647 +1,507 @@
-'use client';
-
-import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { getReports, getAnnouncements, getBilling } from './lib/storage';
-import { heroImages, defaultSchedule, getStatusColor, getStatusStep, defaultContacts } from './lib/constants';
-import { Modal, StatGrid, EmptyState, ReportChart } from './components';
-import type { Announcement, BillingItem, ModalType, Report, ReportStatus } from './lib/types';
 
-export default function BerandaPage() {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [billing, setBilling] = useState<BillingItem[]>([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [showReportDetail, setShowReportDetail] = useState<Report | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+const features = [
+  {
+    title: 'Pengaduan Kampus',
+    description: 'Sampaikan kendala fasilitas, akademik, dan lingkungan kampus dengan alur yang mudah dipantau.',
+  },
+  {
+    title: 'Layanan Terpadu',
+    description: 'Akses informasi layanan kampus dalam satu tempat tanpa harus berpindah kanal.',
+  },
+  {
+    title: 'Forum Aspirasi',
+    description: 'Bangun ruang diskusi yang rapi untuk mahasiswa, dosen, dan pengelola sistem.',
+  },
+];
 
-  useEffect(() => {
-    setReports(getReports());
-    setAnnouncements(getAnnouncements());
-    setBilling(getBilling());
-    setTimeout(() => setIsLoaded(true), 100);
-  }, []);
+const stats = [
+  { value: '24/7', label: 'Akses laporan' },
+  { value: '1', label: 'Pusat layanan' },
+  { value: '3', label: 'Fitur utama' },
+];
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  function prevSlide() {
-    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
-  }
-  function nextSlide() {
-    setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-  }
-
-  const dashboardCounts = useMemo(() => ({
-    all: reports.length,
-    sent: reports.filter((r) => r.status === 'Terkirim').length,
-    process: reports.filter((r) => r.status === 'Diproses').length,
-    done: reports.filter((r) => r.status === 'Selesai').length,
-  }), [reports]);
-
-  const recentReports = useMemo(() => reports.slice(0, 5), [reports]);
-  const unpaidCount = useMemo(() => billing.filter((b) => b.status !== 'Lunas').length, [billing]);
-
-  const services = [
-    { icon: '📢', name: 'Pengumuman', modal: 'pengumuman' as ModalType, bg: '#E3F2FD' },
-    { icon: '📋', name: 'Pengaduan', modal: null, href: '/lapor_mulia/lapor', bg: '#FDF2F4' },
-    { icon: '💰', name: 'Keuangan', modal: 'keuangan' as ModalType, bg: '#FFF3E0' },
-    { icon: '🚨', name: 'Darurat', modal: 'darurat' as ModalType, bg: '#FFEBEE' },
-    { icon: '📅', name: 'Jadwal', modal: 'jadwal' as ModalType, bg: '#E8F5E9' },
-    { icon: '📖', name: 'Perpustakaan', modal: 'perpustakaan' as ModalType, bg: '#F3E5F5' },
-    { icon: '🏢', name: 'Direktori', modal: 'direktori' as ModalType, bg: '#E0F7FA' },
-    { icon: '📚', name: 'E-Learning', modal: 'elearning' as ModalType, bg: '#FBE9E7' },
-  ];
-
+export default function WelcomePage() {
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-        .fade-in-up {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-left {
-          animation: slideInLeft 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-right {
-          animation: slideInRight 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .scale-in {
-          animation: scaleIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
-        .stagger-6 { animation-delay: 0.6s; }
-        .stagger-7 { animation-delay: 0.7s; }
-        .stagger-8 { animation-delay: 0.8s; }
-        
-        .hero-banner {
-          position: relative;
-          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .hero-text {
-          animation: fadeInUp 1s ease-out 0.3s forwards;
-          opacity: 0;
-        }
-        .quick-actions {
-          transition: all 0.3s ease;
-        }
-        .quick-action-btn {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .quick-action-btn:hover {
-          transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 12px 24px rgba(123, 16, 35, 0.15);
-        }
-        .quick-action-btn:active {
-          transform: translateY(-2px) scale(0.98);
-        }
-        .service-card {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
+        .welcome-page {
+          min-height: 100vh;
+          background:
+            radial-gradient(circle at 15% 20%, rgba(123, 16, 35, 0.16), transparent 34%),
+            radial-gradient(circle at 85% 10%, rgba(22, 119, 190, 0.12), transparent 32%),
+            linear-gradient(135deg, var(--bg) 0%, var(--bg-card) 100%);
+          color: var(--text);
           overflow: hidden;
         }
-        .service-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-          transition: left 0.5s;
+        @keyframes welcomeFadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(32px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        .service-card:hover::before {
-          left: 100%;
+        @keyframes welcomeFadeDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        .service-card:hover {
-          transform: translateY(-8px) rotate(1deg);
-          box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+        @keyframes welcomeScaleIn {
+          from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.94);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
-        .service-card:hover .svc-icon {
-          transform: scale(1.2) rotate(10deg);
+        @keyframes welcomeFloat {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
         }
-        .svc-icon {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .welcome-shell {
+          width: min(1120px, calc(100% - 40px));
+          margin: 0 auto;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 40px;
+          padding: 28px 0 36px;
         }
-        .announce-card {
-          transition: all 0.3s ease;
-          position: relative;
+        .welcome-nav {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          opacity: 0;
+          animation: welcomeFadeDown 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        .announce-card:hover {
-          transform: translateX(8px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        .welcome-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: var(--text);
+          text-decoration: none;
         }
-        .announce-card::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          background: linear-gradient(180deg, var(--primary), var(--accent));
-          transform: scaleY(0);
-          transition: transform 0.3s;
+        .welcome-brand-mark {
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: white;
+          font-size: 22px;
+          font-weight: var(--fw-extrabold);
+          box-shadow: 0 16px 32px rgba(123, 16, 35, 0.22);
         }
-        .announce-card:hover::before {
-          transform: scaleY(1);
+        .welcome-brand-title {
+          display: block;
+          font-size: var(--text-lg);
+          font-weight: var(--fw-extrabold);
+          line-height: var(--lh-tight);
         }
-        .schedule-item {
-          transition: all 0.3s ease;
+        .welcome-brand-subtitle {
+          display: block;
+          color: var(--muted);
+          font-size: var(--text-sm);
+          line-height: var(--lh-normal);
         }
-        .schedule-item:hover {
-          transform: translateX(8px);
+        .welcome-login-link {
+          color: var(--primary);
+          text-decoration: none;
+          font-weight: var(--fw-bold);
+          padding: 10px 16px;
+          border: 1px solid rgba(123, 16, 35, 0.22);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.72);
+        }
+        .welcome-main {
+          display: grid;
+          grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+          gap: 48px;
+          align-items: center;
+        }
+        .welcome-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          width: fit-content;
+          padding: 8px 12px;
+          border-radius: 999px;
           background: var(--primary-light);
+          color: var(--primary);
+          font-size: var(--text-sm);
+          font-weight: var(--fw-bold);
+          margin-bottom: 18px;
+          opacity: 0;
+          animation: welcomeFadeUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.12s forwards;
         }
-        .schedule-item:hover .schedule-date {
-          transform: scale(1.1) rotate(-5deg);
+        .welcome-title {
+          font-size: clamp(42px, 7vw, 72px);
+          line-height: 0.98;
+          letter-spacing: 0;
+          margin: 0 0 22px;
+          font-weight: var(--fw-extrabold);
+          color: var(--text);
+          opacity: 0;
+          animation: welcomeFadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
         }
-        .schedule-date {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .welcome-title span {
+          color: var(--primary);
         }
-        .service-card-detailed {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .welcome-description {
+          max-width: 620px;
+          color: var(--muted);
+          font-size: var(--text-lg);
+          line-height: var(--lh-relaxed);
+          margin: 0 0 30px;
+          opacity: 0;
+          animation: welcomeFadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+        }
+        .welcome-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+          align-items: center;
+          margin-bottom: 34px;
+          opacity: 0;
+          animation: welcomeFadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+        }
+        .welcome-cta {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 52px;
+          padding: 0 24px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: white;
+          font-size: var(--text-md);
+          font-weight: var(--fw-bold);
+          text-decoration: none;
+          box-shadow: 0 18px 34px rgba(123, 16, 35, 0.28);
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .welcome-cta:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 22px 42px rgba(123, 16, 35, 0.34);
+        }
+        .welcome-secondary {
+          color: var(--muted);
+          font-size: var(--text-base);
+          line-height: var(--lh-normal);
+        }
+        .welcome-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+          max-width: 560px;
+        }
+        .welcome-stat {
+          padding: 16px;
+          border-radius: 16px;
+          border: 1px solid rgba(123, 16, 35, 0.12);
+          background: rgba(255, 255, 255, 0.72);
+          opacity: 0;
+          animation: welcomeFadeUp 0.65s ease forwards;
+        }
+        .welcome-stat:nth-child(1) {
+          animation-delay: 0.48s;
+        }
+        .welcome-stat:nth-child(2) {
+          animation-delay: 0.56s;
+        }
+        .welcome-stat:nth-child(3) {
+          animation-delay: 0.64s;
+        }
+        .welcome-stat strong {
+          display: block;
+          color: var(--primary);
+          font-size: var(--text-2xl);
+          line-height: var(--lh-tight);
+          margin-bottom: 4px;
+        }
+        .welcome-stat span {
+          color: var(--muted);
+          font-size: var(--text-sm);
+        }
+        .welcome-preview {
           position: relative;
+          min-height: 500px;
+          display: grid;
+          place-items: center;
         }
-        .service-card-detailed:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+        .welcome-device {
+          width: min(420px, 100%);
+          border-radius: 32px;
+          padding: 18px;
+          background: #ffffff;
+          border: 1px solid rgba(123, 16, 35, 0.12);
+          box-shadow: 0 30px 80px rgba(18, 25, 38, 0.18);
+          opacity: 0;
+          animation:
+            welcomeScaleIn 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) 0.28s forwards,
+            welcomeFloat 5s ease-in-out 1.25s infinite;
         }
-        .service-card-detailed:hover .service-card-detailed-arrow {
-          transform: translateX(8px);
+        [data-theme='dark'] .welcome-device,
+        [data-theme='dark'] .welcome-stat,
+        [data-theme='dark'] .welcome-login-link,
+        [data-theme='dark'] .welcome-feature {
+          background: rgba(20, 25, 45, 0.78);
         }
-        .service-card-detailed-arrow {
-          transition: transform 0.3s ease;
+        .welcome-device-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 18px;
         }
-        .service-card-detailed-icon {
-          transition: all 0.3s ease;
+        .welcome-device-title {
+          font-weight: var(--fw-extrabold);
+          color: var(--text);
         }
-        .service-card-detailed:hover .service-card-detailed-icon {
-          transform: scale(1.15) rotate(5deg);
+        .welcome-device-pill {
+          padding: 6px 10px;
+          border-radius: 999px;
+          color: var(--primary);
+          background: var(--primary-light);
+          font-size: var(--text-xs);
+          font-weight: var(--fw-bold);
         }
-        .hero-nav-btn {
-          transition: all 0.3s ease;
+        .welcome-report-card {
+          padding: 18px;
+          border-radius: 22px;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: white;
+          margin-bottom: 14px;
+          opacity: 0;
+          animation: welcomeFadeUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.72s forwards;
         }
-        .hero-nav-btn:hover {
-          transform: scale(1.1);
-          background: rgba(123, 16, 35, 0.95);
+        .welcome-report-card small {
+          display: block;
+          opacity: 0.78;
+          margin-bottom: 10px;
         }
-        .hero-dot {
-          transition: all 0.3s ease;
+        .welcome-report-card strong {
+          display: block;
+          font-size: var(--text-xl);
+          line-height: var(--lh-tight);
+          margin-bottom: 14px;
         }
-        .hero-dot:hover {
-          transform: scale(1.3);
+        .welcome-progress {
+          height: 8px;
+          background: rgba(255, 255, 255, 0.24);
+          border-radius: 999px;
+          overflow: hidden;
         }
-        .contact-card,
-        .billing-card {
-          transition: all 0.3s ease;
+        .welcome-progress span {
+          display: block;
+          width: 68%;
+          height: 100%;
+          background: #ffffff;
+          border-radius: inherit;
         }
-        .contact-card:hover,
-        .billing-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        .welcome-feature-list {
+          display: grid;
+          gap: 12px;
         }
-        .stat-card {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .welcome-feature {
+          display: grid;
+          grid-template-columns: 42px 1fr;
+          gap: 12px;
+          align-items: center;
+          padding: 14px;
+          border-radius: 18px;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          opacity: 0;
+          animation: welcomeFadeUp 0.65s ease forwards;
         }
-        .stat-card:hover {
-          transform: translateY(-6px) scale(1.02);
-          box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+        .welcome-feature:nth-child(1) {
+          animation-delay: 0.86s;
+        }
+        .welcome-feature:nth-child(2) {
+          animation-delay: 0.96s;
+        }
+        .welcome-feature:nth-child(3) {
+          animation-delay: 1.06s;
+        }
+        .welcome-feature-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          background: var(--primary-light);
+          color: var(--primary);
+          font-weight: var(--fw-extrabold);
+        }
+        .welcome-feature h2 {
+          font-size: var(--text-base);
+          margin: 0 0 4px;
+          line-height: var(--lh-tight);
+        }
+        .welcome-feature p {
+          font-size: var(--text-sm);
+          margin: 0;
+          color: var(--muted);
+          line-height: var(--lh-normal);
+        }
+        .welcome-footer {
+          color: var(--muted);
+          font-size: var(--text-sm);
+          opacity: 0;
+          animation: welcomeFadeUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.72s forwards;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .welcome-nav,
+          .welcome-eyebrow,
+          .welcome-title,
+          .welcome-description,
+          .welcome-actions,
+          .welcome-stat,
+          .welcome-device,
+          .welcome-report-card,
+          .welcome-feature,
+          .welcome-footer {
+            opacity: 1;
+            transform: none;
+            animation: none;
+          }
+        }
+        @media (max-width: 860px) {
+          .welcome-shell {
+            width: min(100% - 28px, 640px);
+            padding-top: 20px;
+          }
+          .welcome-main {
+            grid-template-columns: 1fr;
+            gap: 34px;
+          }
+          .welcome-preview {
+            min-height: auto;
+            place-items: stretch;
+          }
+          .welcome-title {
+            font-size: clamp(38px, 13vw, 56px);
+          }
+          .welcome-stats {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 520px) {
+          .welcome-nav {
+            align-items: flex-start;
+          }
+          .welcome-brand-subtitle {
+            display: none;
+          }
+          .welcome-login-link {
+            padding: 9px 12px;
+          }
+          .welcome-description {
+            font-size: var(--text-md);
+          }
+          .welcome-actions {
+            align-items: stretch;
+          }
+          .welcome-cta {
+            width: 100%;
+          }
+          .welcome-device {
+            border-radius: 24px;
+            padding: 14px;
+          }
         }
       `}</style>
-      {/* Hero Carousel */}
-      <div className={`hero-banner ${isLoaded ? 'fade-in-up' : ''}`}>
-        <div className="hero-slider" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-          {heroImages.map((src, i) => (
-            <div key={i} className="hero-slide">
-              <img src={src} alt={`Gedung Universitas Mulia Balikpapan ${i + 1}`} />
-            </div>
-          ))}
-        </div>
-        <button className="hero-nav-btn left" type="button" onClick={prevSlide} aria-label="Sebelumnya">❮</button>
-        <button className="hero-nav-btn right" type="button" onClick={nextSlide} aria-label="Selanjutnya">❯</button>
-        <div className="hero-dots">
-          {heroImages.map((_, i) => (
-            <button key={i} className={`hero-dot ${i === currentSlide ? 'active' : ''}`} type="button" onClick={() => setCurrentSlide(i)} aria-label={`Slide ${i + 1}`} />
-          ))}
-        </div>
-        <div className="hero-text">
-          <h3>🏛️ Universitas Mulia</h3>
-          <p>Sistem Pengaduan & Layanan Kampus Terpadu</p>
-        </div>
-      </div>
 
-      {/* Stats */}
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-1' : ''}`}>
-        <div className="section-header">
-          <h3>Statistik Laporan</h3>
-          <Link href="/lapor_mulia/riwayat" style={{fontSize:'12px',color:'var(--accent)',fontWeight:700}}>Lihat Semua</Link>
-        </div>
-        <StatGrid items={[
-          { icon: '📋', num: dashboardCounts.all, label: 'Total' },
-          { icon: '📨', num: dashboardCounts.sent, label: 'Terkirim' },
-          { icon: '⏳', num: dashboardCounts.process, label: 'Diproses' },
-          { icon: '✅', num: dashboardCounts.done, label: 'Selesai' },
-        ]} />
-      </section>
+      <div className="welcome-page">
+        <div className="welcome-shell">
+          <nav className="welcome-nav" aria-label="Welcome navigation">
+            <Link href="/lapor_mulia" className="welcome-brand">
+              <span className="welcome-brand-mark">M</span>
+              <span>
+                <span className="welcome-brand-title">Mulia Lapor</span>
+                <span className="welcome-brand-subtitle">Universitas Mulia</span>
+              </span>
+            </Link>
+            <Link href="/lapor_mulia/login" className="welcome-login-link">
+              Login
+            </Link>
+          </nav>
 
-      {/* Quick Actions */}
-      <div className={`quick-actions ${isLoaded ? 'fade-in-up stagger-2' : ''}`}>
-        <Link href="/lapor_mulia/lapor" className="quick-action-btn"><span className="qa-icon">📝</span> Buat Laporan</Link>
-        <Link href="/lapor_mulia/riwayat" className="quick-action-btn"><span className="qa-icon">🔍</span> Cek Status</Link>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('pengumuman')}><span className="qa-icon">📢</span> Pengumuman</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('keuangan')}>
-          <span className="qa-icon">💰</span> Keuangan {unpaidCount > 0 && <span style={{background:'#FF9800',color:'white',padding:'2px 6px',borderRadius:'6px',fontSize:'10px'}}>{unpaidCount}</span>}
-        </button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('darurat')}><span className="qa-icon">🚨</span> Darurat</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('jadwal')}><span className="qa-icon">📅</span> Jadwal</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('perpustakaan')}><span className="qa-icon">📖</span> Perpustakaan</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('direktori')}><span className="qa-icon">🏢</span> Direktori</button>
-        <button className="quick-action-btn" type="button" onClick={() => setActiveModal('elearning')}><span className="qa-icon">📚</span> E-Learning</button>
-      </div>
-
-      {/* Service Grid */}
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-3' : ''}`}>
-        <div className="section-header"><h3>Layanan Kampus</h3></div>
-        <div className="service-grid">
-          {services.map((svc, idx) => (
-            svc.modal ? (
-              <button key={svc.name} className={`service-card ${isLoaded ? 'scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}} type="button" onClick={() => setActiveModal(svc.modal)}>
-                <div className="svc-icon" style={{ background: svc.bg }}>{svc.icon}</div>
-                <span className="svc-name">{svc.name}</span>
-              </button>
-            ) : (
-              <Link key={svc.name} href={svc.href!} className={`service-card ${isLoaded ? 'scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}}>
-                <div className="svc-icon" style={{ background: svc.bg }}>{svc.icon}</div>
-                <span className="svc-name">{svc.name}</span>
-              </Link>
-            )
-          ))}
-        </div>
-      </section>
-
-      {/* Pengumuman Terbaru */}
-      <section className={`section ${isLoaded ? 'slide-in-left stagger-4' : ''}`}>
-        <div className="section-header">
-          <h3>Pengumuman Terbaru</h3>
-          <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'12px',fontWeight:700,cursor:'pointer'}} onClick={() => setActiveModal('pengumuman')}>Lihat Semua</button>
-        </div>
-        <div className="announce-list">
-          {announcements.slice(0, 3).map((ann, idx) => (
-            <div key={ann.id} className={`announce-card ${ann.urgent ? 'urgent' : ''} ${isLoaded ? 'fade-in-up' : ''}`} style={{animationDelay: `${0.5 + idx * 0.1}s`}}>
-              <div className="announce-header">
-                <span className={`announce-badge ${ann.urgent ? 'urgent' : 'normal'}`}>{ann.urgent ? '🔴 Urgent' : '🔵 Info'}</span>
-                <span className="announce-date">{ann.date}</span>
+          <main className="welcome-main">
+            <section aria-labelledby="welcome-title">
+              <div className="welcome-eyebrow">Sistem layanan kampus terpadu</div>
+              <h1 id="welcome-title" className="welcome-title">
+                Suara kampus jadi lebih <span>terarah.</span>
+              </h1>
+              <p className="welcome-description">
+                Mulia Lapor membantu mahasiswa, dosen, dan admin mengelola pengaduan,
+                layanan, serta aspirasi kampus dalam satu pengalaman yang sederhana.
+              </p>
+              <div className="welcome-actions">
+                <Link href="/lapor_mulia/login" className="welcome-cta">
+                  Get Started
+                </Link>
+                <span className="welcome-secondary">Masuk sebagai user atau admin sesuai kebutuhan.</span>
               </div>
-              <div className="announce-title">{ann.title}</div>
-              <div className="announce-content">{ann.content}</div>
-              <div className="announce-author">Oleh: {ann.author}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Jadwal Mendatang */}
-      <section className={`section ${isLoaded ? 'slide-in-right stagger-5' : ''}`}>
-        <div className="section-header">
-          <h3>Jadwal Mendatang</h3>
-          <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'12px',fontWeight:700,cursor:'pointer'}} onClick={() => setActiveModal('jadwal')}>Lihat Semua</button>
-        </div>
-        <div className="schedule-list">
-          {defaultSchedule.slice(0, 3).map((sch, i) => (
-            <div key={i} className={`schedule-item ${isLoaded ? 'fade-in-up' : ''}`} style={{animationDelay: `${0.6 + i * 0.1}s`}}>
-              <div className="schedule-date">
-                <div className="day">{sch.date.split(' ')[0]}</div>
-                <div className="month">{sch.date.split(' ')[1]}</div>
+              <div className="welcome-stats" aria-label="Ringkasan Mulia Lapor">
+                {stats.map((item) => (
+                  <div key={item.label} className="welcome-stat">
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
               </div>
-              <div className="schedule-info">
-                <div className="event">{sch.event}</div>
-                <div className="location">{sch.location}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            </section>
 
-      {/* Laporan Terakhir */}
-      {recentReports.length > 0 && (
-        <section className={`section ${isLoaded ? 'fade-in-up stagger-6' : ''}`}>
-          <div className="section-header">
-            <h3>Laporan Terakhir</h3>
-            <Link href="/lapor_mulia/riwayat" style={{fontSize:'12px',color:'var(--accent)',fontWeight:700}}>Lihat Semua</Link>
-          </div>
-          <div className="service-grid-modern">
-            {recentReports.map((report, idx) => (
-              <button 
-                key={report.ticket} 
-                className={`service-card-detailed ${isLoaded ? 'scale-in' : ''}`}
-                style={{animationDelay: `${0.7 + idx * 0.08}s`}}
-                onClick={() => setShowReportDetail(report)}
-              >
-                <div className="service-card-detailed-icon" style={{ background: getStatusColor(report.status) + '20', color: getStatusColor(report.status) }}>
-                  {report.status === 'Terkirim' && '📨'}
-                  {report.status === 'Diproses' && '⏳'}
-                  {report.status === 'Selesai' && '✅'}
-                  {report.status === 'Ditolak' && '❌'}
+            <section className="welcome-preview" aria-label="Preview fitur Mulia Lapor">
+              <div className="welcome-device">
+                <div className="welcome-device-top">
+                  <span className="welcome-device-title">Dashboard Laporan</span>
+                  <span className="welcome-device-pill">Aktif</span>
                 </div>
-                <div className="service-card-detailed-content">
-                  <div className="service-card-detailed-name">{report.title}</div>
-                  <div className="service-card-detailed-desc">
-                    {report.ticket} • {report.category} • {report.location}
-                  </div>
+                <div className="welcome-report-card">
+                  <small>Status laporan terbaru</small>
+                  <strong>Fasilitas kelas sedang diproses</strong>
+                  <div className="welcome-progress"><span /></div>
                 </div>
-                <div className="service-card-detailed-arrow">→</div>
-                <div className="service-card-detailed-badge">{report.status}</div>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Modals */}
-      <Modal isOpen={activeModal === 'pengumuman'} onClose={() => setActiveModal(null)} title="Pengumuman" icon="📢">
-        <div className="announce-list">
-          {announcements.map((ann) => (
-            <div key={ann.id} className={`announce-card ${ann.urgent ? 'urgent' : ''}`}>
-              <div className="announce-header">
-                <span className={`announce-badge ${ann.urgent ? 'urgent' : 'normal'}`}>{ann.urgent ? '🔴 Urgent' : '🔵 Info'}</span>
-                <span className="announce-date">{ann.date}</span>
-              </div>
-              <div className="announce-title">{ann.title}</div>
-              <div className="announce-content">{ann.content}</div>
-              <div className="announce-author">Oleh: {ann.author}</div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'keuangan'} onClose={() => setActiveModal(null)} title="Keuangan" icon="💰">
-        <div style={{marginBottom:12,padding:12,background:'#FFF3E0',borderRadius:12,fontSize:13,fontWeight:700}}>
-          Tagihan belum dibayar: <span style={{color:'var(--warning)'}}>{unpaidCount}</span>
-        </div>
-        <div className="billing-list">
-          {billing.map((b) => (
-            <div key={b.id} className="billing-card">
-              <div className="billing-top">
-                <div className="billing-name">{b.name}</div>
-                <div className="billing-amount">{b.amount}</div>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span className={`billing-status ${b.status === 'Lunas' ? 'lunas' : 'belum'}`}>{b.status}</span>
-                <span className="billing-due">Jatuh tempo: {b.dueDate}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'darurat'} onClose={() => setActiveModal(null)} title="Kontak Darurat" icon="🚨">
-        <div className="contact-list">
-          {defaultContacts.map((c, i) => (
-            <div key={i} className="contact-card">
-              <div className="contact-icon">{c.icon}</div>
-              <div className="contact-info">
-                <div className="name">{c.name}</div>
-                <div className="role">{c.role} • {c.phone}</div>
-              </div>
-              <a href={`tel:${c.phone.replace(/[^0-9+]/g, '')}`} className="contact-call">📞 Hubungi</a>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'jadwal'} onClose={() => setActiveModal(null)} title="Jadwal Akademik" icon="📅">
-        <div className="schedule-list">
-          {defaultSchedule.map((sch, i) => (
-            <div key={i} className="schedule-item">
-              <div className="schedule-date">
-                <div className="day">{sch.date.split(' ')[0]}</div>
-                <div className="month">{sch.date.split(' ')[1]}</div>
-              </div>
-              <div className="schedule-info">
-                <div className="event">{sch.event}</div>
-                <div className="location">{sch.location}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'perpustakaan'} onClose={() => setActiveModal(null)} title="Perpustakaan" icon="📖">
-        <div style={{marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Jam Operasional</div>
-          <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.6}}>
-            Senin - Jumat: 08:00 - 16:00<br/>
-            Sabtu: 08:00 - 12:00<br/>
-            Minggu & Hari Libur: Tutup
-          </div>
-        </div>
-        <div style={{marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Buku Sedang Dipinjam</div>
-          <div className="report-list">
-            {[
-              { title: 'Pemrograman Web Lanjut', due: '30 Jun 2026', status: 'Dipinjam' },
-              { title: 'Basis Data Relasional', due: '05 Jul 2026', status: 'Dipinjam' },
-            ].map((book, i) => (
-              <div key={i} className="report-card">
-                <div className="report-title">{book.title}</div>
-                <div className="report-meta"><span>📅 Kembali: {book.due}</span><span className="report-status" style={{background:'#E3F2FD',color:'var(--accent)'}}>{book.status}</span></div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Cari Buku</div>
-          <div className="search-bar">
-            <input type="text" placeholder="Judul buku atau ISBN..." />
-            <button type="button">Cari</button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'direktori'} onClose={() => setActiveModal(null)} title="Direktori Kampus" icon="🏢">
-        <div className="contact-list">
-          {[
-            { name: 'BAAK', role: 'Biro Administrasi Akademik & Kemahasiswaan', phone: '(0541) 765-4322', icon: '📚' },
-            { name: 'Biro Keuangan', role: 'Pembayaran & Tagihan', phone: '(0541) 765-4323', icon: '💰' },
-            { name: 'Kemahasiswaan', role: 'Organisasi & Beasiswa', phone: '(0541) 765-4324', icon: '🎓' },
-            { name: 'Sarana Prasarana', role: 'Fasilitas & Perawatan', phone: '(0541) 765-4325', icon: '🔧' },
-          ].map((c, i) => (
-            <div key={i} className="contact-card">
-              <div className="contact-icon">{c.icon}</div>
-              <div className="contact-info">
-                <div className="name">{c.name}</div>
-                <div className="role">{c.role} • {c.phone}</div>
-              </div>
-              <a href={`tel:${c.phone.replace(/[^0-9+]/g, '')}`} className="contact-call">📞</a>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'elearning'} onClose={() => setActiveModal(null)} title="E-Learning" icon="📚">
-        <div className="report-list">
-          {[
-            { code: 'CS201', name: 'Pemrograman Web', lecturer: 'Dr. Ahmad', status: 'Aktif', progress: 75 },
-            { code: 'CS301', name: 'Basis Data', lecturer: 'Prof. Siti', status: 'Aktif', progress: 60 },
-            { code: 'CS302', name: 'Jaringan Komputer', lecturer: 'Dr. Budi', status: 'Aktif', progress: 45 },
-            { code: 'CS401', name: 'Kecerdasan Buatan', lecturer: 'Dr. Dewi', status: 'Selesai', progress: 100 },
-          ].map((course, i) => (
-            <div key={i} className="report-card">
-              <div className="report-card-top">
-                <span className="report-ticket">{course.code}</span>
-                <span className="report-status" style={{background: course.status === 'Aktif' ? '#E3F2FD' : '#E8F5E9', color: course.status === 'Aktif' ? 'var(--accent)' : 'var(--success)'}}>{course.status}</span>
-              </div>
-              <div className="report-title">{course.name}</div>
-              <div className="report-meta"><span>👨‍🏫 {course.lecturer}</span></div>
-              <div className="course-progress">
-                <div className="course-progress-bar" style={{width:`${course.progress}%`}} />
-              </div>
-              <div className="course-progress-text">{course.progress}% selesai</div>
-            </div>
-          ))}
-        </div>
-      </Modal>
-
-      <Modal isOpen={!!showReportDetail} onClose={() => setShowReportDetail(null)} title="" icon="">
-        {showReportDetail && (
-          <>
-            {/* Detail Header */}
-            <div className="report-detail-header">
-              <div className="report-detail-ticket">{showReportDetail.ticket}</div>
-              <div className="report-detail-title">{showReportDetail.title}</div>
-              <div className="report-detail-status">
-                {showReportDetail.status === 'Terkirim' && '📨'}
-                {showReportDetail.status === 'Diproses' && '⏳'}
-                {showReportDetail.status === 'Selesai' && '✅'}
-                {showReportDetail.status === 'Ditolak' && '❌'}
-                {' '}{showReportDetail.status}
-              </div>
-            </div>
-
-            {/* Detail Body */}
-            <div className="report-detail-body">
-              {/* Deskripsi */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Deskripsi</div>
-                <div className="report-detail-desc">{showReportDetail.description}</div>
-              </div>
-
-              {/* Info Grid */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Informasi</div>
-                <div className="report-detail-info">
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Kategori</div>
-                    <div className="report-detail-info-value">📂 {showReportDetail.category}</div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Urgensi</div>
-                    <div className="report-detail-info-value">
-                      {showReportDetail.priority === 'Darurat' && '🔴'}
-                      {showReportDetail.priority === 'Tinggi' && '🟠'}
-                      {showReportDetail.priority === 'Sedang' && '🟡'}
-                      {showReportDetail.priority === 'Rendah' && '🟢'}
-                      {' '}{showReportDetail.priority}
-                    </div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Lokasi</div>
-                    <div className="report-detail-info-value">📍 {showReportDetail.location}</div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Pelapor</div>
-                    <div className="report-detail-info-value">👤 {showReportDetail.name}</div>
-                  </div>
-                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
-                    <div className="report-detail-info-label">Kontak</div>
-                    <div className="report-detail-info-value">📞 {showReportDetail.contact}</div>
-                  </div>
-                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
-                    <div className="report-detail-info-label">Tanggal</div>
-                    <div className="report-detail-info-value">📅 {showReportDetail.createdAt}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Status Timeline</div>
-                <div className="timeline">
-                  {(['Terkirim', 'Diproses', 'Selesai'] as ReportStatus[]).map((s, i) => {
-                    const current = getStatusStep(showReportDetail.status);
-                    const step = i + 1;
-                    return (
-                      <div key={s} className="timeline-step">
-                        <div className={`timeline-dot ${step < current ? 'done' : step === current ? 'active' : ''}`}>{step < current ? '✓' : step}</div>
-                        {i < 2 && <div className={`timeline-line ${step < current ? 'done' : step === current ? 'active' : ''}`} />}
-                        <div className="timeline-label">{s}</div>
+                <div className="welcome-feature-list">
+                  {features.map((feature, index) => (
+                    <article key={feature.title} className="welcome-feature">
+                      <div className="welcome-feature-icon">0{index + 1}</div>
+                      <div>
+                        <h2>{feature.title}</h2>
+                        <p>{feature.description}</p>
                       </div>
-                    );
-                  })}
+                    </article>
+                  ))}
                 </div>
               </div>
+            </section>
+          </main>
 
-              {/* Ditolak Notice */}
-              {showReportDetail.status === 'Ditolak' && (
-                <div style={{padding:12,background:'#FFEBEE',borderRadius:12,fontSize:13,color:'var(--danger)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  ❌ Laporan ditolak oleh admin. Silakan hubungi BAAK untuk informasi lebih lanjut.
-                </div>
-              )}
-
-              {/* Selesai Notice */}
-              {showReportDetail.status === 'Selesai' && (
-                <div style={{padding:12,background:'#E8F5E9',borderRadius:12,fontSize:13,color:'var(--success)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  ✅ Laporan telah selesai ditangani. Terima kasih atas partisipasi Anda.
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </Modal>
+          <footer className="welcome-footer">
+            Universitas Mulia - Sistem Pengaduan & Layanan Kampus Terpadu
+          </footer>
+        </div>
+      </div>
     </>
   );
 }
+

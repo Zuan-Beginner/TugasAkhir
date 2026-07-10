@@ -28,8 +28,8 @@ export default function RootLayout({
 
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="id"
+      suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -43,7 +43,7 @@ export default function RootLayout({
           })();
         ` }} />
       </head>
-      <body className="min-h-full flex flex-col bg-gray-50">
+      <body className={`min-h-full flex flex-col bg-gray-50 ${geistSans.variable} ${geistMono.variable}`} style={{ fontFamily: 'var(--font-geist-sans), system-ui, sans-serif' }}>
         {!isLaporMulia && <Navbar />}
         {!isLaporMulia && <BreadcrumbNav />}
         <main className="flex-1">{children}</main>
