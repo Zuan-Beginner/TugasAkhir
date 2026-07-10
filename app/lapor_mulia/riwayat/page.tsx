@@ -12,11 +12,11 @@ export default function RiwayatPage() {
   const [ticketSearch, setTicketSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'Semua'>('Semua');
   const [showDetail, setShowDetail] = useState<Report | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true);
 
   useEffect(() => {
     setReports(getReports());
-    setTimeout(() => setIsLoaded(true), 100);
+    
   }, []);
 
   const filtered = useMemo(() => {
@@ -57,61 +57,6 @@ export default function RiwayatPage() {
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-40px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes bounceIn {
-          0% { opacity: 0; transform: scale(0.3); }
-          50% { opacity: 1; transform: scale(1.05); }
-          70% { transform: scale(0.9); }
-          100% { transform: scale(1); }
-        }
-
-        .fade-in-up {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-left {
-          animation: slideInLeft 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-right {
-          animation: slideInRight 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .scale-in {
-          animation: scaleIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .bounce-in {
-          animation: bounceIn 0.6s ease-out forwards;
-          opacity: 0;
-        }
-
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
-        .stagger-6 { animation-delay: 0.6s; }
-
         .layanan-banner {
           transition: all 0.3s ease;
         }
@@ -213,7 +158,7 @@ export default function RiwayatPage() {
       `}</style>
 
       {/* Page Banner */}
-      <div className={`layanan-banner ${isLoaded ? 'fade-in-up' : ''}`}>
+      <div className={`layanan-banner ${isLoaded ? 'anim-fade-up' : ''}`}>
         <div className="layanan-banner-icon">📋</div>
         <div className="layanan-banner-content">
           <h1>Riwayat Laporan</h1>
@@ -233,7 +178,7 @@ export default function RiwayatPage() {
 
       {/* Search Bar */}
       <section className="section">
-        <div className={`search-bar-modern ${isLoaded ? 'slide-in-left stagger-1' : ''}`}>
+        <div className={`search-bar-modern ${isLoaded ? 'anim-slide-left delay-1' : ''}`}>
           <div className="search-icon">🔍</div>
           <input 
             type="text" 
@@ -291,7 +236,7 @@ export default function RiwayatPage() {
             return (
               <button 
                 key={s} 
-                className={`category-filter-card ${isActive ? 'active' : ''} ${isLoaded ? `scale-in stagger-${idx + 2}` : ''}`}
+                className={`category-filter-card ${isActive ? 'active' : ''} ${isLoaded ? `anim-scale-in delay-${idx + 2}` : ''}`}
                 onClick={() => setStatusFilter(s)}
                 style={{
                   borderColor: isActive ? colors[s as keyof typeof colors] : 'var(--border)',
@@ -398,7 +343,7 @@ export default function RiwayatPage() {
         ) : (
           <div className="service-grid-modern">
             {filtered.map((report, idx) => (
-              <button key={report.ticket} className={`service-card-detailed ${isLoaded ? `fade-in-up stagger-${Math.min(idx + 1, 6)}` : ''}`} onClick={() => setShowDetail(report)}>
+              <button key={report.ticket} className={`service-card-detailed ${isLoaded ? `anim-fade-up delay-${Math.min(idx + 1, 6)}` : ''}`} onClick={() => setShowDetail(report)}>
                 <div className="service-card-detailed-icon" style={{ background: getStatusColor(report.status) + '20', color: getStatusColor(report.status) }}>
                   {report.status === 'Terkirim' && '📨'}
                   {report.status === 'Diproses' && '⏳'}
@@ -423,10 +368,10 @@ export default function RiwayatPage() {
       {reports.length > 0 && (
         <section className="section">
           <div className="stats-grid">
-            <div className={`stat-card ${isLoaded ? 'scale-in stagger-1' : ''}`}><div className="stat-icon">📋</div><div className="stat-num">{reports.length}</div><div className="stat-label">Total</div></div>
-            <div className={`stat-card ${isLoaded ? 'scale-in stagger-2' : ''}`}><div className="stat-icon">📨</div><div className="stat-num">{reports.filter((r) => r.status === 'Terkirim').length}</div><div className="stat-label">Terkirim</div></div>
-            <div className={`stat-card ${isLoaded ? 'scale-in stagger-3' : ''}`}><div className="stat-icon">⏳</div><div className="stat-num">{reports.filter((r) => r.status === 'Diproses').length}</div><div className="stat-label">Diproses</div></div>
-            <div className={`stat-card ${isLoaded ? 'scale-in stagger-4' : ''}`}><div className="stat-icon">✅</div><div className="stat-num">{reports.filter((r) => r.status === 'Selesai').length}</div><div className="stat-label">Selesai</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-1' : ''}`}><div className="stat-icon">📋</div><div className="stat-num">{reports.length}</div><div className="stat-label">Total</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-2' : ''}`}><div className="stat-icon">📨</div><div className="stat-num">{reports.filter((r) => r.status === 'Terkirim').length}</div><div className="stat-label">Terkirim</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-3' : ''}`}><div className="stat-icon">⏳</div><div className="stat-num">{reports.filter((r) => r.status === 'Diproses').length}</div><div className="stat-label">Diproses</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-4' : ''}`}><div className="stat-icon">✅</div><div className="stat-num">{reports.filter((r) => r.status === 'Selesai').length}</div><div className="stat-label">Selesai</div></div>
           </div>
         </section>
       )}
@@ -479,3 +424,4 @@ export default function RiwayatPage() {
     </>
   );
 }
+

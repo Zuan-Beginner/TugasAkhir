@@ -21,7 +21,7 @@ export default function LaporPage() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function LaporPage() {
       setDraftRestored(true);
     }
     setDraftLoaded(true);
-    setTimeout(() => setIsLoaded(true), 100);
+    
   }, []);
 
   useEffect(() => {
@@ -108,74 +108,6 @@ export default function LaporPage() {
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInFromLeft {
-          from { opacity: 0; transform: translateX(-40px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInFromRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes bounceIn {
-          0% { opacity: 0; transform: scale(0.3); }
-          50% { opacity: 1; transform: scale(1.05); }
-          70% { transform: scale(0.9); }
-          100% { transform: scale(1); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 16, 35, 0.7); }
-          50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(123, 16, 35, 0); }
-        }
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 5px rgba(123, 16, 35, 0.5); }
-          50% { box-shadow: 0 0 20px rgba(123, 16, 35, 0.8); }
-        }
-        
-        .fade-in-up {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-left {
-          animation: slideInFromLeft 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-right {
-          animation: slideInFromRight 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .scale-in {
-          animation: scaleIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .bounce-in {
-          animation: bounceIn 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
-        .stagger-6 { animation-delay: 0.6s; }
-        
         .layanan-banner {
           transition: all 0.3s ease;
         }
@@ -318,7 +250,7 @@ export default function LaporPage() {
         }
       `}</style>
       {/* Page Banner */}
-      <div className={`layanan-banner ${isLoaded ? 'fade-in-up' : ''}`}>
+      <div className={`layanan-banner ${isLoaded ? 'anim-fade-up' : ''}`}>
         <div className="layanan-banner-icon">📝</div>
         <div className="layanan-banner-content">
           <h1>Buat Laporan</h1>
@@ -336,7 +268,7 @@ export default function LaporPage() {
         </div>
       </div>
 
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-1' : ''}`} id="lapor-section">
+      <section className={`section ${isLoaded ? 'anim-fade-up delay-2' : ''}`} id="lapor-section">
         <div className="section-header">
           <h3>Form Laporan</h3>
           <span className="section-count">Langkah {currentStep} dari 2</span>
@@ -368,7 +300,7 @@ export default function LaporPage() {
         )}
 
         {/* Category Selection */}
-        <div className={`category-selection-card ${isLoaded ? 'slide-in-left stagger-2' : ''}`}>
+        <div className={`category-selection-card ${isLoaded ? 'anim-slide-left delay-4' : ''}`}>
           <div className="category-selection-header">
             <div className="category-selection-badge">1</div>
             <h4>Pilih Kategori Laporan</h4>
@@ -377,7 +309,7 @@ export default function LaporPage() {
             {categories.map((cat, idx) => (
               <button
                 key={cat.name}
-                className={`category-card-lapor ${formData.category === cat.name ? 'active' : ''} ${isLoaded ? 'scale-in' : ''}`}
+                className={`category-card-lapor ${formData.category === cat.name ? 'active' : ''} ${isLoaded ? 'anim-scale-in' : ''}`}
                 style={{animationDelay: `${0.3 + idx * 0.05}s`}}
                 type="button"
                 onClick={() => updateForm('category', cat.name)}
@@ -391,7 +323,7 @@ export default function LaporPage() {
         </div>
 
         {/* Form */}
-        <div className={`form-section-modern ${isLoaded ? 'slide-in-right stagger-3' : ''}`}>
+        <div className={`form-section-modern ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
           <div className="form-section-header">
             <div className="category-selection-badge">2</div>
             <h4>Detail Laporan</h4>
@@ -472,14 +404,14 @@ export default function LaporPage() {
 
       {/* Recent Reports */}
       {recentReports.length > 0 && (
-        <section className={`section ${isLoaded ? 'fade-in-up stagger-4' : ''}`}>
+        <section className={`section ${isLoaded ? 'anim-fade-up delay-7' : ''}`}>
           <div className="section-header">
             <h3>Laporan Terakhir</h3>
             <span className="section-count">{recentReports.length} laporan</span>
           </div>
           <div className="recent-reports-grid">
             {recentReports.map((r, idx) => (
-              <div key={r.ticket} className={`recent-report-card ${isLoaded ? 'bounce-in' : ''}`} style={{animationDelay: `${0.5 + idx * 0.1}s`}}>
+              <div key={r.ticket} className={`recent-report-card ${isLoaded ? 'anim-bounce-in' : ''}`} style={{animationDelay: `${0.5 + idx * 0.1}s`}}>
                 <div className="recent-report-status-badge" style={{background: '#E3F2FD', color: 'var(--accent)'}}>
                   📨 {r.status}
                 </div>
@@ -501,3 +433,4 @@ export default function LaporPage() {
     </>
   );
 }
+

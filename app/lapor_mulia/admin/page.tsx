@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 type ReportStatus = 'Terkirim' | 'Diproses' | 'Selesai' | 'Ditolak';
@@ -40,9 +40,21 @@ const statusColors: Record<ReportStatus, string> = {
 };
 
 export default function AdminPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved) as Report[];
+    } catch {
+      return [];
+    }
+  });
   const [adminCode, setAdminCode] = useState('');
-  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [adminLoggedIn, setAdminLoggedIn] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(ADMIN_KEY) === 'true';
+  });
   const [loginError, setLoginError] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,16 +63,6 @@ export default function AdminPage() {
   const [sortColumn, setSortColumn] = useState<'ticket' | 'title' | 'createdAt' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    const session = window.localStorage.getItem(ADMIN_KEY);
-    if (session === 'true') setAdminLoggedIn(true);
-
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try { setReports(JSON.parse(saved) as Report[]); } catch { setReports([]); }
-    }
-  }, []);
 
   const filteredReports = useMemo(() => {
     let result = reports;
@@ -140,26 +142,93 @@ export default function AdminPage() {
 
       const doc = new jsPDF('l', 'mm', 'a4'); // landscape
 
-      // Set font
-      doc.setFont('Arial');
-
+      // ========== HEADER SECTION ==========
+      // Background header
+      doc.setFillColor(123, 16, 35);
+      doc.rect(0, 0, 297, 35, 'F');
+      
+      // Logo placeholder (icon universitas)
+      doc.setFillColor(255, 255, 255);
+      doc.circle(20, 17, 8, 'F');
+      doc.setFontSize(14);
+      doc.setTextColor(123, 16, 35);
+      doc.text('U', 20, 21, { align: 'center' });
+      
       // Title
-      doc.setFontSize(16);
-      doc.text('Laporan Pengaduan - Universitas Mulia', 14, 15);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('Arial', 'bold');
+      doc.text('LAPORAN PENGADUAN', 35, 15);
+      
+      doc.setFontSize(11);
+      doc.setFont('Arial', 'normal');
+      doc.text('Universitas Mulia - Sistem Pengaduan Terpadu', 35, 23);
+      
+      // Date badge
+      const exportDate = new Date().toLocaleDateString('id-ID', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      doc.setFillColor(255, 255, 255, 0.2);
+      doc.roundedRect(200, 10, 85, 15, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Diekspor:', 205, 15);
+      doc.setFontSize(9);
+      doc.text(exportDate, 205, 21);
 
-      // Date
+      // ========== STATISTICS SECTION ==========
+      doc.setTextColor(0, 0, 0);
       doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Tanggal Export: ${new Date().toLocaleString('id-ID')}`, 14, 22);
-      doc.setTextColor(0);
+      doc.setFont('Arial', 'bold');
+      doc.text('RINGKASAN STATISTIK', 14, 45);
+      
+      // Stats cards
+      const statsData = [
+        { label: 'Total Laporan', value: reports.length, color: [123, 16, 35] },
+        { label: 'Terkirim', value: reports.filter(r => r.status === 'Terkirim').length, color: [59, 130, 246] },
+        { label: 'Diproses', value: reports.filter(r => r.status === 'Diproses').length, color: [245, 158, 11] },
+        { label: 'Selesai', value: reports.filter(r => r.status === 'Selesai').length, color: [34, 197, 94] },
+        { label: 'Ditolak', value: reports.filter(r => r.status === 'Ditolak').length, color: [239, 68, 68] }
+      ];
 
+      let xPos = 14;
+      statsData.forEach((stat, idx) => {
+        // Card background
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(xPos, 50, 50, 18, 2, 2, 'F');
+        
+        // Color indicator
+        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
+        doc.roundedRect(xPos, 50, 4, 18, 2, 2, 'F');
+        
+        // Value
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.setFont('Arial', 'bold');
+        doc.text(stat.value.toString(), xPos + 8, 60);
+        
+        // Label
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(7);
+        doc.setFont('Arial', 'normal');
+        doc.text(stat.label, xPos + 8, 65);
+        
+        xPos += 55;
+      });
+
+      // ========== TABLE SECTION ==========
       // Table headers
-      const headers = ['Tiket', 'Judul', 'Kategori', 'Lokasi', 'Pelapor', 'Urgensi', 'Status', 'Tanggal'];
-
-      // Table data
-      const data = sortedReports.map(r => [
+      const headers = ['No', 'Tiket', 'Judul Laporan', 'Kategori', 'Lokasi', 'Pelapor', 'Urgensi', 'Status', 'Tanggal'];
+      
+      // Table data dengan nomor urut
+      const data = sortedReports.map((r, idx) => [
+        idx + 1,
         r.ticket,
-        r.title,
+        r.title.length > 35 ? r.title.substring(0, 35) + '...' : r.title,
         r.category,
         r.location,
         r.name,
@@ -168,58 +237,117 @@ export default function AdminPage() {
         r.createdAt
       ]);
 
-      // Add table dengan styling
+      // Status color mapping
+      const getStatusColor = (status: string): [number, number, number] => {
+        switch(status) {
+          case 'Terkirim': return [59, 130, 246];
+          case 'Diproses': return [245, 158, 11];
+          case 'Selesai': return [34, 197, 94];
+          case 'Ditolak': return [239, 68, 68];
+          default: return [128, 128, 128];
+        }
+      };
+
+      // Priority color mapping
+      const getPriorityColor = (priority: string): [number, number, number] => {
+        switch(priority) {
+          case 'Darurat': return [239, 68, 68];
+          case 'Tinggi': return [249, 115, 22];
+          case 'Sedang': return [234, 179, 8];
+          case 'Rendah': return [34, 197, 94];
+          default: return [128, 128, 128];
+        }
+      };
+
+      // Add table dengan styling improved
       autoTable(doc, {
         head: [headers],
         body: data,
-        startY: 28,
-        margin: { left: 10, right: 10, top: 10, bottom: 10 },
+        startY: 75,
+        margin: { left: 10, right: 10 },
         headStyles: {
-          fillColor: [123, 16, 35], // Primary color
-          textColor: 255,
+          fillColor: [123, 16, 35],
+          textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 10,
-          cellPadding: 3,
-          halign: 'center'
+          fontSize: 8,
+          cellPadding: 4,
+          halign: 'center',
+          valign: 'middle',
+          lineColor: [123, 16, 35],
+          lineWidth: 0.5
         },
         bodyStyles: {
-          fontSize: 9,
-          cellPadding: 2.5,
-          textColor: 0
+          fontSize: 8,
+          cellPadding: 3,
+          textColor: [30, 30, 30],
+          lineColor: [220, 220, 220],
+          lineWidth: 0.3,
+          valign: 'middle'
         },
         alternateRowStyles: {
-          fillColor: [245, 247, 250] // Light gray background untuk alternating rows
+          fillColor: [248, 250, 252]
         },
         columnStyles: {
-          0: { cellWidth: 18, halign: 'center' },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 22, halign: 'center' },
-          3: { cellWidth: 22, halign: 'center' },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 15, halign: 'center' },
-          6: { cellWidth: 18, halign: 'center' },
-          7: { cellWidth: 22, halign: 'center' }
+          0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+          1: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+          2: { cellWidth: 45, halign: 'left' },
+          3: { cellWidth: 25, halign: 'center' },
+          4: { cellWidth: 25, halign: 'center' },
+          5: { cellWidth: 25, halign: 'left' },
+          6: { cellWidth: 20, halign: 'center' },
+          7: { cellWidth: 20, halign: 'center' },
+          8: { cellWidth: 22, halign: 'center' }
         },
-        didDrawPage: (data) => {
+        didParseCell: function(data) {
+          // Style status column (index 7)
+          if (data.column.index === 7 && data.section === 'body') {
+            const status = String(data.cell.raw || '');
+            const color = getStatusColor(status);
+            data.cell.styles.textColor = color;
+            data.cell.styles.fontStyle = 'bold';
+          }
+          // Style priority column (index 6)
+          if (data.column.index === 6 && data.section === 'body') {
+            const priority = String(data.cell.raw || '');
+            const color = getPriorityColor(priority);
+            data.cell.styles.textColor = color;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        },
+        didDrawPage: function(data) {
           // Footer
           const pageCount = doc.getNumberOfPages();
           const pageSize = doc.internal.pageSize;
           const pageHeight = pageSize.getHeight();
-          const footerY = pageHeight - 10;
+          const footerY = pageHeight - 8;
 
-          doc.setFontSize(8);
-          doc.setTextColor(150);
+          // Footer line
+          doc.setDrawColor(220, 220, 220);
+          doc.line(10, footerY - 5, 287, footerY - 5);
+
+          // Footer text
+          doc.setFontSize(7);
+          doc.setTextColor(150, 150, 150);
           doc.text(
-            `Halaman ${data.pageNumber} dari ${pageCount}`,
+            'Dokumen ini digenerate secara otomatis oleh Sistem Lapor Mulia - Universitas Mulia',
             pageSize.getWidth() / 2,
             footerY,
             { align: 'center' }
           );
+          doc.text(
+            `Halaman ${data.pageNumber} dari ${pageCount}`,
+            287,
+            footerY,
+            { align: 'right' }
+          );
         }
       });
 
-      // Save PDF
-      doc.save(`laporan-mulia-${new Date().toISOString().split('T')[0]}.pdf`);
+      // ========== SAVE PDF ==========
+      const filename = `Laporan-Pengaduan-${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+      
+      alert('PDF berhasil diekspor!');
     } catch (error) {
       alert('Gagal export PDF. Pastikan library jspdf dan jspdf-autotable sudah ter-install.');
       console.error(error);
@@ -280,6 +408,14 @@ export default function AdminPage() {
           }
           * { margin: 0; padding: 0; box-sizing: border-box; font-family: Inter, Poppins, -apple-system, sans-serif; }
           body { background: var(--bg); color: var(--text); min-height: 100vh; }
+          @keyframes adminFadeUp {
+            from { opacity: 0; transform: translateY(32px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes adminScaleIn {
+            from { opacity: 0; transform: translateY(16px) scale(0.92); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
           .login-page {
             min-height: 100vh; display: flex; align-items: center; justify-content: center;
             background: linear-gradient(135deg, var(--primary-dark), var(--primary));
@@ -288,6 +424,7 @@ export default function AdminPage() {
           .login-card {
             background: var(--card); border-radius: var(--radius-lg); padding: 40px 32px;
             width: 100%; max-width: 400px; box-shadow: var(--shadow-lg); text-align: center;
+            opacity: 0; animation: adminScaleIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
           }
           .login-icon { font-size: 48px; margin-bottom: 16px; }
           .login-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
@@ -314,6 +451,11 @@ export default function AdminPage() {
           .login-back {
             display: inline-block; margin-top: 16px; font-size: 13px; color: var(--accent);
             font-weight: 600; text-decoration: none;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .login-card {
+              opacity: 1; transform: none; animation: none;
+            }
           }
         `}</style>
         <div className="login-page">
@@ -352,11 +494,24 @@ export default function AdminPage() {
         a { color: inherit; text-decoration: none; }
 
         .admin-container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        @keyframes adminFadeUp {
+            from { opacity: 0; transform: translateY(32px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+        @keyframes adminFadeDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes adminScaleIn {
+            from { opacity: 0; transform: translateY(16px) scale(0.92); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
 
         /* Header */
         .admin-header {
           background: var(--primary); padding: 16px; margin: 0 -16px;
           border-radius: 0 0 24px 24px; margin-bottom: 20px;
+          opacity: 0; animation: adminFadeDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .admin-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
         .admin-brand { display: flex; align-items: center; gap: 10px; color: white; }
@@ -386,7 +541,14 @@ export default function AdminPage() {
           background: var(--card); border-radius: 14px; padding: 14px; text-align: center;
           box-shadow: var(--shadow); cursor: pointer; transition: transform 0.15s;
           min-width: 0; overflow: hidden;
+          opacity: 0; animation: adminFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
+        .stat-box:nth-child(1) { animation-delay: 0.12s; }
+        .stat-box:nth-child(2) { animation-delay: 0.18s; }
+        .stat-box:nth-child(3) { animation-delay: 0.24s; }
+        .stat-box:nth-child(4) { animation-delay: 0.30s; }
+        .stat-box:nth-child(5) { animation-delay: 0.36s; }
+        .stat-box:nth-child(6) { animation-delay: 0.42s; }
         .stat-box:hover { transform: translateY(-2px); }
         .stat-box.active { border: 2px solid var(--primary); }
         .stat-box .num { font-size: 24px; font-weight: 800; line-height: 1; min-height: 24px; display: flex; align-items: center; justify-content: center; }
@@ -396,6 +558,7 @@ export default function AdminPage() {
         .toolbar {
           display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
           background: var(--card); padding: 20px; border-radius: 16px; box-shadow: var(--shadow);
+          opacity: 0; animation: adminFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.36s forwards;
         }
         .search-input {
           flex: 1; min-width: 250px; padding: 12px 16px; border: 2px solid var(--border);
@@ -434,6 +597,7 @@ export default function AdminPage() {
         .table-card {
           background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
           overflow: hidden; border: 1px solid var(--border);
+          opacity: 0; animation: adminFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.48s forwards;
         }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
@@ -454,6 +618,16 @@ export default function AdminPage() {
         th.sorted .sort-icon { color: var(--primary); }
         td { vertical-align: middle; border-bottom: 1px solid var(--border); }
         tbody tr { transition: all 0.2s; }
+        tbody tr {
+          opacity: 0;
+          animation: adminFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        tbody tr:nth-child(1) { animation-delay: 0.56s; }
+        tbody tr:nth-child(2) { animation-delay: 0.60s; }
+        tbody tr:nth-child(3) { animation-delay: 0.64s; }
+        tbody tr:nth-child(4) { animation-delay: 0.68s; }
+        tbody tr:nth-child(5) { animation-delay: 0.72s; }
+        tbody tr:nth-child(n + 6) { animation-delay: 0.76s; }
         tbody tr:hover { background: var(--bg); transform: scale(1.001); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         tbody tr.selected { background: var(--primary-light); }
         tr:last-child td { border-bottom: none; }
@@ -561,6 +735,7 @@ export default function AdminPage() {
         .confirm-box {
           background: var(--card); border-radius: var(--radius-lg); padding: 28px;
           width: 100%; max-width: 400px; text-align: center; box-shadow: var(--shadow-lg);
+          animation: adminScaleIn 0.25s ease;
         }
         .confirm-icon { font-size: 48px; margin-bottom: 12px; }
         .confirm-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
@@ -582,6 +757,21 @@ export default function AdminPage() {
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        @media (prefers-reduced-motion: reduce) {
+          .admin-header,
+          .stat-box,
+          .toolbar,
+          .table-card,
+          tbody tr,
+          .modal-overlay,
+          .modal-box,
+          .confirm-box {
+            opacity: 1;
+            transform: none;
+            animation: none;
+          }
+        }
 
         /* Responsive: Tablet */
         @media (min-width: 768px) {
@@ -876,3 +1066,4 @@ export default function AdminPage() {
     </>
   );
 }
+

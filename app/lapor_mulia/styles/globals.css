@@ -28,6 +28,123 @@
   --radius-xl: 24px;
 }
 
+/* ===== DARK MODE CSS VARIABLES ===== */
+[data-theme='dark'] {
+  --bg: #0f1535;
+  --card: #1a2141;
+  --text: #E5E7EB;
+  --muted: #9CA3AF;
+  --border: #2D3748;
+  --primary-light: rgba(253, 242, 244, 0.15);
+  --accent-light: rgba(30, 136, 229, 0.15);
+}
+
+/* ===== TYPOGRAPHY SCALE ===== */
+:root {
+  /* Font sizes - Desktop */
+  --text-xs:    11px;
+  --text-sm:    12px;
+  --text-base:  14px;
+  --text-md:    16px;
+  --text-lg:    18px;
+  --text-xl:    20px;
+  --text-2xl:   24px;
+  --text-3xl:   28px;
+
+  /* Font sizes - Mobile */
+  --text-xs-mobile:    10px;
+  --text-sm-mobile:    11px;
+  --text-base-mobile:  13px;
+  --text-md-mobile:    14px;
+  --text-lg-mobile:    16px;
+  --text-xl-mobile:    18px;
+  --text-2xl-mobile:   20px;
+  --text-3xl-mobile:   24px;
+
+  /* Line heights */
+  --lh-tight:   1.2;
+  --lh-normal:  1.5;
+  --lh-relaxed: 1.75;
+
+  /* Font weights */
+  --fw-normal:      400;
+  --fw-medium:      500;
+  --fw-semibold:    600;
+  --fw-bold:        700;
+  --fw-extrabold:   800;
+
+  /* Icon sizes */
+  --icon-size-sm:   16px;
+  --icon-size-md:   24px;
+  --icon-size-lg:   32px;
+  --icon-size-xl:   48px;
+}
+
+/* Mobile responsive typography */
+@media (max-width: 640px) {
+  :root {
+    --text-xs:    var(--text-xs-mobile);
+    --text-sm:    var(--text-sm-mobile);
+    --text-base:  var(--text-base-mobile);
+    --text-md:    var(--text-md-mobile);
+    --text-lg:    var(--text-lg-mobile);
+    --text-xl:    var(--text-xl-mobile);
+    --text-2xl:   var(--text-2xl-mobile);
+    --text-3xl:   var(--text-3xl-mobile);
+  }
+}
+
+/* ===== TYPOGRAPHY UTILITY CLASSES ===== */
+.text-xs {
+  font-size: var(--text-xs);
+  line-height: var(--lh-tight);
+}
+
+.text-sm {
+  font-size: var(--text-sm);
+  line-height: var(--lh-tight);
+}
+
+.text-base {
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+}
+
+.text-md {
+  font-size: var(--text-md);
+  line-height: var(--lh-normal);
+}
+
+.text-lg {
+  font-size: var(--text-lg);
+  line-height: var(--lh-normal);
+}
+
+.text-xl {
+  font-size: var(--text-xl);
+  line-height: var(--lh-normal);
+  font-weight: var(--fw-semibold);
+}
+
+.text-2xl {
+  font-size: var(--text-2xl);
+  line-height: var(--lh-normal);
+  font-weight: var(--fw-bold);
+}
+
+.text-3xl {
+  font-size: var(--text-3xl);
+  line-height: var(--lh-tight);
+  font-weight: var(--fw-extrabold);
+}
+
+/* Font weights */
+.fw-normal { font-weight: var(--fw-normal); }
+.fw-medium { font-weight: var(--fw-medium); }
+.fw-semibold { font-weight: var(--fw-semibold); }
+.fw-bold { font-weight: var(--fw-bold); }
+.fw-extrabold { font-weight: var(--fw-extrabold); }
+
 /* ===== GLOBAL RESET ===== */
 * {
   margin: 0;
@@ -58,7 +175,7 @@ body {
   background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
-  padding-bottom: 80px;
+  padding-bottom: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   position: relative;
@@ -142,8 +259,8 @@ textarea {
 
 /* ===== LAYOUT ===== */
 .app-container {
-  max-width: 480px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0 16px;
 }
 
@@ -290,117 +407,241 @@ textarea {
   text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* ===== BOTTOM NAVIGATION ===== */
-.bottom-nav {
-  position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  z-index: 120;
-  background: rgba(255,255,255,0.98);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 10px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
-  border: 1px solid rgba(123,16,35,0.08);
+/* ===== LEFT SIDEBAR NAVIGATION ===== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: transparent;
+  color: var(--text);
+  position: relative;
 }
 
-.bottom-nav a {
+.left-sidebar {
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  bottom: 16px;
+  width: 260px;
+  z-index: 120;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 24px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
+  border: 1px solid var(--border);
+  overflow-y: auto;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-brand {
+  display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 10px 6px;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary-light) 0%, rgba(253,242,244,0.5) 100%);
+  text-decoration: none;
+  color: var(--text);
+  margin-bottom: 8px;
+  transition: all 0.3s;
+}
+
+.sidebar-brand:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(123,16,35,0.1);
+}
+
+.sidebar-brand-icon {
+  font-size: 28px;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-brand-text {
+  flex: 1;
+}
+
+.sidebar-brand-text h1 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.2;
+  color: var(--primary);
+}
+
+.sidebar-brand-text small {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.left-sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
   border-radius: 16px;
   background: transparent;
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
+  color: var(--text);
   position: relative;
 }
 
-.bottom-nav a:hover {
-  transform: translateY(-2px);
+.left-sidebar a:hover {
+  background: var(--bg);
+  transform: translateX(4px);
 }
 
-.bottom-nav a.active {
+.left-sidebar a.active {
   background: linear-gradient(135deg, var(--primary-light) 0%, rgba(253,242,244,0.5) 100%);
+  color: var(--primary);
 }
 
-.bottom-nav a.active::before {
+.left-sidebar a.active::before {
   content: '';
   position: absolute;
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 3px;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
   background: var(--primary);
   border-radius: 2px;
 }
 
-.bottom-nav a .nav-icon {
+.left-sidebar a .nav-icon {
   font-size: 22px;
+  min-width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.2s;
 }
 
-.bottom-nav a.active .nav-icon {
+.left-sidebar a:hover .nav-icon {
   transform: scale(1.1);
 }
 
-.bottom-nav a .nav-label {
-  font-size: 10px;
+.left-sidebar a.active .nav-icon {
+  transform: scale(1.15);
+}
+
+.left-sidebar a .nav-label {
+  font-size: 14px;
   font-weight: 600;
   color: var(--muted);
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
-.bottom-nav a.active .nav-label {
+.left-sidebar a:hover .nav-label {
+  color: var(--text);
+}
+
+.left-sidebar a.active .nav-label {
   color: var(--primary);
   font-weight: 700;
 }
 
-.bottom-nav a.primary-action {
+.left-sidebar a.primary-action {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
   box-shadow: 0 6px 20px rgba(123,16,35,0.35);
-  transform: scale(1.05);
+  margin-top: auto;
 }
 
-.bottom-nav a.primary-action:hover {
-  transform: scale(1.08) translateY(-2px);
+.left-sidebar a.primary-action:hover {
+  transform: translateY(-2px) translateX(4px);
   box-shadow: 0 8px 24px rgba(123,16,35,0.4);
 }
 
-.bottom-nav a.primary-action .nav-label {
+.left-sidebar a.primary-action .nav-label {
   color: white;
   font-weight: 700;
 }
 
-.bottom-nav a.primary-action .nav-icon {
+.left-sidebar a.primary-action .nav-icon {
   font-size: 24px;
 }
 
-/* Continue with remaining 800+ lines of CSS from the original file... */
-/* This is a minimal working version. The full extraction would include:
-   - Hero Banner Carousel styles
-   - Stats Grid styles
-   - Quick Actions styles
-   - Service Grid styles
-   - Announcement styles
-   - Schedule styles
-   - Report Card styles
-   - Modal styles
-   - Form styles
-   - Profile styles
-   - Admin styles
-   - All responsive media queries
-   - Animations
-   */
+.app-container {
+  flex: 1;
+  margin-left: 292px;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  background: transparent;
+}
 
+/* BOTTOM NAVIGATION (Hidden by default, shown only on mobile if needed) */
+.bottom-nav {
+  display: none;
+}
+
+/* ===== RESPONSIVE - MOBILE (< 768px) ===== */
+@media (max-width: 767px) {
+  .left-sidebar {
+    width: 72px;
+    padding: 20px 8px;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+  }
+
+  .sidebar-brand {
+    justify-content: center;
+    padding: 12px 8px;
+    margin-bottom: 0;
+  }
+
+  .sidebar-brand-text {
+    display: none;
+  }
+
+  .sidebar-menu {
+    gap: 4px;
+  }
+
+  .left-sidebar a {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+
+  .left-sidebar a .nav-label {
+    display: none;
+  }
+
+  .left-sidebar a.active::before {
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    top: 6px;
+    width: 24px;
+    height: 3px;
+  }
+
+  .app-container {
+    margin-left: 88px;
+  }
+}
+
+/* ===== BOTTOM NAVIGATION (OLD - DEPRECATED) ===== 
 /* ===== SERVICE GRIDS ===== */
 .service-grid {
   display: grid;
@@ -2453,7 +2694,7 @@ textarea {
 
 /* ===== RESPONSIVE - TABLET (768px+) ===== */
 @media (min-width: 768px) {
-  .app-container { max-width: 720px; padding: 0 24px; }
+  .app-container { max-width: none; padding: 0 24px; }
   .app-header { padding: 24px; border-radius: 0 0 32px 32px; }
   .header-brand-text h1 { font-size: 18px; }
   .greeting h2 { font-size: 24px; }
@@ -2482,15 +2723,12 @@ textarea {
   .profile-stat-row { gap: 24px; }
   .profile-avatar { width: 120px; height: 120px; font-size: 56px; }
   
-  .bottom-nav { left: 24px; right: 24px; bottom: 24px; padding: 10px; }
-  .bottom-nav a { padding: 10px 8px; }
-  .bottom-nav a .nav-icon { font-size: 22px; }
-  .bottom-nav a .nav-label { font-size: 11px; }
+
 }
 
 /* ===== RESPONSIVE - DESKTOP (1024px+) ===== */
 @media (min-width: 1024px) {
-  .app-container { max-width: 960px; padding: 0 32px; }
+  .app-container { max-width: 1200px; padding: 0 32px; }
   .app-header { padding: 32px; }
   .header-brand-text h1 { font-size: 20px; }
   .greeting h2 { font-size: 28px; }
@@ -2538,7 +2776,7 @@ textarea {
   
   .modal-content { border-radius: 32px; max-width: 600px; padding: 32px; }
   
-  .bottom-nav { max-width: 480px; left: 50%; right: auto; transform: translateX(-50%); }
+
 }
 
 /* ===========================
@@ -2547,7 +2785,7 @@ textarea {
 
 /* Smooth transition when toggling theme */
 body,
-.bottom-nav,
+.left-sidebar,
 .search-bar-modern,
 .category-filter-card,
 .service-card-detailed,
@@ -2587,7 +2825,11 @@ input, select, textarea {
 }
 
 /* Card surfaces that were hardcoded to white */
-[data-theme="dark"] .bottom-nav { background: rgba(26,29,36,0.98); }
+
+[data-theme='dark'] .left-sidebar {
+  background: rgba(26,33,65,0.88);
+}
+[data-theme="dark"] .left-sidebar { background: rgba(26,33,65,0.88); }
 [data-theme="dark"] .search-bar-modern,
 [data-theme="dark"] .category-filter-card,
 [data-theme="dark"] .service-card-detailed,
@@ -2633,3 +2875,276 @@ input, select, textarea {
 }
 .theme-toggle:hover { background: rgba(255,255,255,0.28); transform: scale(1.05); }
 .theme-toggle:active { transform: scale(0.95); }
+
+/* ===========================
+   SMOOTH ANIMATION SYSTEM
+   =========================== */
+
+/* --- Master Keyframes --- */
+@keyframes smoothFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes smoothFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes smoothFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes smoothSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes smoothSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes smoothScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes smoothBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-4px);
+  }
+  80% {
+    transform: scale(0.98) translateY(2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes smoothFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@keyframes smoothPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.04); opacity: 0.92; }
+}
+
+@keyframes smoothShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes smoothSpinIn {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+
+@keyframes smoothBlurIn {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+/* --- Easing variables --- */
+:root {
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* --- Utility animation classes --- */
+.anim-fade-up {
+  opacity: 0;
+  animation: smoothFadeUp 0.7s var(--ease-smooth) forwards;
+}
+.anim-fade-down {
+  opacity: 0;
+  animation: smoothFadeDown 0.6s var(--ease-smooth) forwards;
+}
+.anim-fade-in {
+  opacity: 0;
+  animation: smoothFadeIn 0.6s var(--ease-smooth) forwards;
+}
+.anim-slide-left {
+  opacity: 0;
+  animation: smoothSlideLeft 0.7s var(--ease-smooth) forwards;
+}
+.anim-slide-right {
+  opacity: 0;
+  animation: smoothSlideRight 0.7s var(--ease-smooth) forwards;
+}
+.anim-scale-in {
+  opacity: 0;
+  animation: smoothScaleIn 0.6s var(--ease-smooth) forwards;
+}
+.anim-bounce-in {
+  opacity: 0;
+  animation: smoothBounceIn 0.8s var(--ease-spring) forwards;
+}
+.anim-blur-in {
+  opacity: 0;
+  animation: smoothBlurIn 0.7s var(--ease-smooth) forwards;
+}
+.anim-float {
+  animation: smoothFloat 3s ease-in-out infinite;
+}
+.anim-pulse {
+  animation: smoothPulse 2.5s ease-in-out infinite;
+}
+
+/* --- Stagger delays (smooth) --- */
+.delay-1 { animation-delay: 0.06s; }
+.delay-2 { animation-delay: 0.12s; }
+.delay-3 { animation-delay: 0.18s; }
+.delay-4 { animation-delay: 0.24s; }
+.delay-5 { animation-delay: 0.30s; }
+.delay-6 { animation-delay: 0.36s; }
+.delay-7 { animation-delay: 0.42s; }
+.delay-8 { animation-delay: 0.48s; }
+.delay-9 { animation-delay: 0.54s; }
+.delay-10 { animation-delay: 0.60s; }
+.delay-11 { animation-delay: 0.66s; }
+.delay-12 { animation-delay: 0.72s; }
+
+/* --- Modal open / close with smooth animations --- */
+.modal-overlay {
+  animation: smoothFadeIn 0.25s var(--ease-smooth) forwards;
+}
+.modal-overlay.modal-closing {
+  animation: smoothFadeOut 0.25s var(--ease-smooth) forwards;
+}
+.modal-content {
+  animation: smoothModalIn 0.4s var(--ease-spring) forwards;
+}
+.modal-content.modal-closing {
+  animation: smoothModalOut 0.3s var(--ease-smooth) forwards;
+}
+
+@keyframes smoothModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes smoothModalOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+}
+@keyframes smoothFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* --- Card hover transitions (global) --- */
+.stat-card,
+.service-card,
+.report-card,
+.announce-card,
+.contact-card,
+.schedule-item,
+.category-filter-card,
+.service-card-detailed,
+.layanan-card-simple,
+.category-selection-card,
+.category-card-lapor,
+.form-section-modern,
+.recent-report-card,
+.quick-action-btn,
+.faq-item {
+  transition:
+    transform 0.4s var(--ease-smooth),
+    box-shadow 0.4s var(--ease-smooth),
+    border-color 0.3s ease;
+}
+
+/* --- Left sidebar smooth entry --- */
+.left-sidebar {
+  animation: smoothSlideRight 0.5s var(--ease-smooth) 0.15s both;
+}
+
+/* --- Header smooth entry --- */
+.app-header {
+  animation: smoothFadeDown 0.6s var(--ease-smooth) both;
+}
+
+/* --- Greeting smooth entry --- */
+.greeting {
+  animation: smoothFadeUp 0.6s var(--ease-smooth) 0.15s both;
+}
+
+/* --- Section smooth entrance (for main content) --- */
+.section {
+  animation: smoothFadeUp 0.6s var(--ease-smooth) both;
+}
+
+/* --- Reduced motion support --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

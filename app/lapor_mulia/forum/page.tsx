@@ -59,7 +59,7 @@ export default function ForumPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true);
   const [filterMode, setFilterMode] = useState<'all' | 'mine' | 'starred' | 'pinned'>('all');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,7 +69,7 @@ export default function ForumPage() {
 
   useEffect(() => {
     loadMessages();
-    setTimeout(() => setIsLoaded(true), 100);
+    
 
     // Poll for new messages every 3 seconds
     const interval = setInterval(() => {
@@ -269,38 +269,6 @@ export default function ForumPage() {
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-        .fade-in-up {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-right {
-          animation: slideInRight 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .scale-in {
-          animation: scaleIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-
         .forum-container {
           max-width: 900px;
           margin: 0 auto;
@@ -357,7 +325,8 @@ export default function ForumPage() {
         .filter-btn {
           padding: 10px 20px;
           border: 2px solid var(--border);
-          background: white;
+          background: var(--card);
+          color: var(--text);
           border-radius: 12px;
           font-size: 13px;
           font-weight: 700;
@@ -377,7 +346,8 @@ export default function ForumPage() {
           margin-left: auto;
           padding: 10px 20px;
           border: 2px solid var(--border);
-          background: white;
+          background: var(--card);
+          color: var(--text);
           border-radius: 12px;
           font-size: 13px;
           font-weight: 700;
@@ -393,7 +363,7 @@ export default function ForumPage() {
         }
 
         .messages-container {
-          background: white;
+          background: var(--card);
           border-radius: 20px;
           padding: 24px;
           min-height: 400px;
@@ -401,6 +371,7 @@ export default function ForumPage() {
           overflow-y: auto;
           margin-bottom: 20px;
           box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          color: var(--text);
         }
         .message-item {
           padding: 16px;
@@ -452,12 +423,12 @@ export default function ForumPage() {
           margin-bottom: 12px;
         }
         .message-reply-preview {
-          background: rgba(0,0,0,0.05);
+          background: var(--bg);
+          color: var(--text);
           padding: 8px 12px;
           border-radius: 8px;
           margin-bottom: 8px;
           font-size: 12px;
-          color: var(--muted);
           border-left: 3px solid var(--primary);
         }
         .message-actions {
@@ -467,7 +438,8 @@ export default function ForumPage() {
         .message-action-btn {
           padding: 6px 12px;
           border: none;
-          background: white;
+          background: var(--bg);
+          color: var(--text);
           border-radius: 8px;
           font-size: 12px;
           font-weight: 600;
@@ -484,7 +456,8 @@ export default function ForumPage() {
           color: var(--danger);
         }
         .message-action-btn.like.liked {
-          background: #fee;
+          background: var(--bg);
+          opacity: 0.8;
         }
         .message-action-btn.reply {
           color: var(--primary);
@@ -494,10 +467,11 @@ export default function ForumPage() {
         }
 
         .compose-box {
-          background: white;
+          background: var(--card);
           border-radius: 20px;
           padding: 20px;
           box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          color: var(--text);
         }
         .reply-indicator {
           background: var(--primary-light);
@@ -518,6 +492,8 @@ export default function ForumPage() {
           width: 100%;
           padding: 14px;
           border: 2px solid var(--border);
+          background: var(--bg);
+          color: var(--text);
           border-radius: 12px;
           font-size: 14px;
           outline: none;
@@ -529,6 +505,9 @@ export default function ForumPage() {
         .compose-input:focus {
           border-color: var(--primary);
           box-shadow: 0 0 0 4px rgba(123, 16, 35, 0.1);
+        }
+        .compose-input::placeholder {
+          color: var(--muted);
         }
         .compose-actions {
           display: flex;
@@ -572,12 +551,13 @@ export default function ForumPage() {
           padding: 20px;
         }
         .modal-box {
-          background: white;
+          background: var(--card);
           border-radius: 24px;
           padding: 32px;
           max-width: 400px;
           width: 100%;
           box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          color: var(--text);
         }
         .modal-title {
           font-size: 24px;
@@ -593,6 +573,8 @@ export default function ForumPage() {
           width: 100%;
           padding: 12px 16px;
           border: 2px solid var(--border);
+          background: var(--bg);
+          color: var(--text);
           border-radius: 12px;
           font-size: 14px;
           outline: none;
@@ -600,6 +582,10 @@ export default function ForumPage() {
         }
         .modal-input:focus {
           border-color: var(--primary);
+          color: var(--text);
+        }
+        .modal-input::placeholder {
+          color: var(--muted);
         }
         .avatar-grid {
           display: grid;
@@ -659,13 +645,14 @@ export default function ForumPage() {
 
         .context-menu {
           position: fixed;
-          background: white;
+          background: var(--card);
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.2);
           padding: 8px;
           min-width: 180px;
           z-index: 1001;
           animation: scaleIn 0.2s ease-out;
+          color: var(--text);
         }
         .context-menu-item {
           padding: 10px 16px;
@@ -702,7 +689,7 @@ export default function ForumPage() {
           position: absolute;
           top: 16px;
           right: 16px;
-          background: white;
+          background: var(--card);
           border: 2px solid var(--border);
           border-radius: 50%;
           width: 32px;
@@ -712,6 +699,7 @@ export default function ForumPage() {
           cursor: pointer;
           transition: all 0.3s;
           font-size: 16px;
+          color: var(--text);
         }
         .star-btn:hover {
           transform: scale(1.15) rotate(15deg);
@@ -725,7 +713,7 @@ export default function ForumPage() {
 
       <div className="forum-container">
         {/* Banner */}
-        <div className={`forum-banner ${isLoaded ? 'fade-in-up' : ''}`}>
+        <div className={`forum-banner ${isLoaded ? 'anim-fade-up' : ''}`}>
           <div className="forum-banner-content">
             <h1 style={{fontSize: 28, fontWeight: 800, marginBottom: 8}}>💬 Forum Diskusi</h1>
             <p style={{fontSize: 14, opacity: 0.9}}>Ruang komunikasi mahasiswa dan civitas Universitas Mulia</p>
@@ -743,7 +731,7 @@ export default function ForumPage() {
         </div>
 
         {/* Filter Bar */}
-        <div className={`filter-bar ${isLoaded ? 'fade-in-up stagger-1' : ''}`}>
+        <div className={`filter-bar ${isLoaded ? 'anim-fade-up delay-2' : ''}`}>
           <button 
             className={`filter-btn ${filterMode === 'all' ? 'active' : ''}`}
             onClick={() => setFilterMode('all')}
@@ -779,7 +767,7 @@ export default function ForumPage() {
         </div>
 
         {/* Messages */}
-        <div className={`messages-container ${isLoaded ? 'scale-in stagger-2' : ''}`}>
+        <div className={`messages-container ${isLoaded ? 'anim-scale-in delay-4' : ''}`}>
           {filteredMessages.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">💬</div>
@@ -947,7 +935,7 @@ export default function ForumPage() {
 
 
         {/* Compose Box */}
-        <div className={`compose-box ${isLoaded ? 'slide-in-right stagger-3' : ''}`}>
+        <div className={`compose-box ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
           {replyTo && (
             <div className="reply-indicator">
               <span>💬 Membalas <strong>{replyTo.author}</strong></span>
@@ -982,3 +970,4 @@ export default function ForumPage() {
     </>
   );
 }
+

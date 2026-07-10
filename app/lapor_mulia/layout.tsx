@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -69,7 +69,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     [reports]
   );
 
-  const isPublicRoute = pathname === '/lapor_mulia';
+  const isPublicRoute = pathname === '/lapor_mulia' || pathname === '/lapor_mulia/login';
 
   useEffect(() => {
     if (!user && !isPublicRoute) {
@@ -94,8 +94,47 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="app-container">
-        <header className="app-header">
+      <div className="app-layout">
+        <nav className="left-sidebar">
+          <Link href="/lapor_mulia" className="sidebar-brand">
+            <div className="sidebar-brand-icon">🏫</div>
+            <div className="sidebar-brand-text">
+              <h1>Mulia Lapor</h1>
+              <small>Universitas Mulia</small>
+            </div>
+          </Link>
+          <div className="sidebar-menu">
+            <Link href="/lapor_mulia/home" className={isActive('/lapor_mulia/home') ? 'active' : ''}>
+              <span className="nav-icon">🏠</span>
+              <span className="nav-label">Beranda</span>
+            </Link>
+            <Link href="/lapor_mulia/layanan" className={isActive('/lapor_mulia/layanan') ? 'active' : ''}>
+              <span className="nav-icon">📋</span>
+              <span className="nav-label">Layanan</span>
+            </Link>
+            <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
+              <span className="nav-icon">💬</span>
+              <span className="nav-label">Forum</span>
+            </Link>
+            <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
+              <span className="nav-icon">📊</span>
+              <span className="nav-label">Riwayat</span>
+            </Link>
+            {isAdmin() ? (
+              <Link href="/lapor_mulia/admin" className={`primary-action ${isActive('/lapor_mulia/admin') ? 'active' : ''}`}>
+                <span className="nav-icon">🛡️</span>
+                <span className="nav-label">Admin</span>
+              </Link>
+            ) : (
+              <Link href="/lapor_mulia/lapor" className={`primary-action ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
+                <span className="nav-icon">➕</span>
+                <span className="nav-label">Lapor</span>
+              </Link>
+            )}
+          </div>
+        </nav>
+        <div className="app-container">
+          <header className="app-header">
           <div className="header-top">
             <Link href="/lapor_mulia" className="header-brand">
               <div className="header-brand-icon">⚑</div>
@@ -143,35 +182,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
         <main className="page-content">{children}</main>
 
-        <nav className="bottom-nav">
-          <Link href="/lapor_mulia/home" className={isActive('/lapor_mulia/home') ? 'active' : ''}>
-            <span className="nav-icon">🏠</span>
-            <span className="nav-label">Beranda</span>
-          </Link>
-          <Link href="/lapor_mulia/layanan" className={isActive('/lapor_mulia/layanan') ? 'active' : ''}>
-            <span className="nav-icon">📋</span>
-            <span className="nav-label">Layanan</span>
-          </Link>
-          {isAdmin() ? (
-            <Link href="/lapor_mulia/admin" className={`primary-action ${isActive('/lapor_mulia/admin') ? 'active' : ''}`}>
-              <span className="nav-icon">🛡️</span>
-              <span className="nav-label">Admin</span>
-            </Link>
-          ) : (
-            <Link href="/lapor_mulia/lapor" className={`primary-action ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
-              <span className="nav-icon">➕</span>
-              <span className="nav-label">Lapor</span>
-            </Link>
-          )}
-          <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
-            <span className="nav-icon">💬</span>
-            <span className="nav-label">Forum</span>
-          </Link>
-          <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
-            <span className="nav-icon">📊</span>
-            <span className="nav-label">Riwayat</span>
-          </Link>
-        </nav>
+
 
         <Modal
           isOpen={showNotifications}
@@ -264,7 +275,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </Modal>
-      </div>
+        </div> {/* closing of app-container */}
+      </div> {/* closing of app-layout */}
     </>
   );
 }
