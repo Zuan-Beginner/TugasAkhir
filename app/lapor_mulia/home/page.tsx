@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { getReports, getAnnouncements, getBilling } from '../lib/storage';
 import { heroImages, defaultSchedule, defaultContacts, getStatusColor, getStatusStep } from '../lib/constants';
 import type { Report, Announcement, BillingItem, ModalType, ReportStatus } from '../lib/types';
-import { StatGrid, Modal } from '../components';
+import { StatGrid, Modal, ReportDetailModal } from '../components';
 
 export default function DashboardHome() {
   const [reports, setReports] = useState<Report[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [billing, setBilling] = useState<BillingItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showReportDetail, setShowReportDetail] = useState<Report | null>(null);
@@ -20,7 +20,7 @@ export default function DashboardHome() {
     setReports(getReports());
     setAnnouncements(getAnnouncements());
     setBilling(getBilling());
-    setTimeout(() => setIsLoaded(true), 100);
+    
   }, []);
 
   useEffect(() => {
@@ -61,63 +61,6 @@ export default function DashboardHome() {
   return (
     <>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-        .fade-in-up {
-          animation: fadeInUp 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-left {
-          animation: slideInLeft 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .slide-in-right {
-          animation: slideInRight 0.6s ease-out forwards;
-          opacity: 0;
-        }
-        .scale-in {
-          animation: scaleIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
-        .stagger-6 { animation-delay: 0.6s; }
-        .stagger-7 { animation-delay: 0.7s; }
-        .stagger-8 { animation-delay: 0.8s; }
-
         .hero-banner {
           position: relative;
           transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -253,7 +196,7 @@ export default function DashboardHome() {
         }
       `}</style>
       {/* Hero Carousel */}
-      <div className={`hero-banner ${isLoaded ? 'fade-in-up' : ''}`}>
+      <div className={`hero-banner ${isLoaded ? 'anim-fade-up' : ''}`}>
         <div className="hero-slider" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
           {heroImages.map((src, i) => (
             <div key={i} className="hero-slide">
@@ -275,10 +218,10 @@ export default function DashboardHome() {
       </div>
 
       {/* Stats */}
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-1' : ''}`}>
+      <section className={`section ${isLoaded ? 'anim-fade-up delay-2' : ''}`}>
         <div className="section-header">
           <h3>Statistik Laporan</h3>
-          <Link href="/lapor_mulia/riwayat" style={{fontSize:'12px',color:'var(--accent)',fontWeight:700}}>Lihat Semua</Link>
+          <Link href="/lapor_mulia/riwayat" style={{fontSize:'var(--text-sm)',color:'var(--accent)',fontWeight:'var(--fw-bold)'}}>Lihat Semua</Link>
         </div>
         <StatGrid items={[
           { icon: '📋', num: dashboardCounts.all, label: 'Total' },
@@ -289,12 +232,12 @@ export default function DashboardHome() {
       </section>
 
       {/* Quick Actions */}
-      <div className={`quick-actions ${isLoaded ? 'fade-in-up stagger-2' : ''}`}>
+      <div className={`quick-actions ${isLoaded ? 'anim-fade-up delay-4' : ''}`}>
         <Link href="/lapor_mulia/lapor" className="quick-action-btn"><span className="qa-icon">📝</span> Buat Laporan</Link>
         <Link href="/lapor_mulia/riwayat" className="quick-action-btn"><span className="qa-icon">🔍</span> Cek Status</Link>
         <button className="quick-action-btn" type="button" onClick={() => setActiveModal('pengumuman')}><span className="qa-icon">📢</span> Pengumuman</button>
         <button className="quick-action-btn" type="button" onClick={() => setActiveModal('keuangan')}>
-          <span className="qa-icon">💰</span> Keuangan {unpaidCount > 0 && <span style={{background:'#FF9800',color:'white',padding:'2px 6px',borderRadius:'6px',fontSize:'10px'}}>{unpaidCount}</span>}
+          <span className="qa-icon">💰</span> Keuangan {unpaidCount > 0 && <span style={{background:'#FF9800',color:'white',padding:'2px 6px',borderRadius:'6px',fontSize:'var(--text-xs)'}}>{unpaidCount}</span>}
         </button>
         <button className="quick-action-btn" type="button" onClick={() => setActiveModal('darurat')}><span className="qa-icon">🚨</span> Darurat</button>
         <button className="quick-action-btn" type="button" onClick={() => setActiveModal('jadwal')}><span className="qa-icon">📅</span> Jadwal</button>
@@ -304,17 +247,17 @@ export default function DashboardHome() {
       </div>
 
       {/* Service Grid */}
-      <section className={`section ${isLoaded ? 'fade-in-up stagger-3' : ''}`}>
+      <section className={`section ${isLoaded ? 'anim-fade-up delay-6' : ''}`}>
         <div className="section-header"><h3>Layanan Kampus</h3></div>
         <div className="service-grid">
           {services.map((svc, idx) => (
             svc.modal ? (
-              <button key={svc.name} className={`service-card ${isLoaded ? 'scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}} type="button" onClick={() => setActiveModal(svc.modal)}>
+              <button key={svc.name} className={`service-card ${isLoaded ? 'anim-scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}} type="button" onClick={() => setActiveModal(svc.modal)}>
                 <div className="svc-icon" style={{ background: svc.bg }}>{svc.icon}</div>
                 <span className="svc-name">{svc.name}</span>
               </button>
             ) : (
-              <Link key={svc.name} href={svc.href!} className={`service-card ${isLoaded ? 'scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}}>
+              <Link key={svc.name} href={svc.href!} className={`service-card ${isLoaded ? 'anim-scale-in' : ''}`} style={{animationDelay: `${0.4 + idx * 0.05}s`}}>
                 <div className="svc-icon" style={{ background: svc.bg }}>{svc.icon}</div>
                 <span className="svc-name">{svc.name}</span>
               </Link>
@@ -324,14 +267,14 @@ export default function DashboardHome() {
       </section>
 
       {/* Pengumuman Terbaru */}
-      <section className={`section ${isLoaded ? 'slide-in-left stagger-4' : ''}`}>
+      <section className={`section ${isLoaded ? 'anim-slide-left delay-7' : ''}`}>
         <div className="section-header">
           <h3>Pengumuman Terbaru</h3>
-          <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'12px',fontWeight:700,cursor:'pointer'}} onClick={() => setActiveModal('pengumuman')}>Lihat Semua</button>
+          <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'var(--text-sm)',fontWeight:'var(--fw-bold)',cursor:'pointer'}} onClick={() => setActiveModal('pengumuman')}>Lihat Semua</button>
         </div>
         <div className="announce-list">
           {announcements.slice(0, 3).map((ann, idx) => (
-            <div key={ann.id} className={`announce-card ${ann.urgent ? 'urgent' : ''} ${isLoaded ? 'fade-in-up' : ''}`} style={{animationDelay: `${0.5 + idx * 0.1}s`}}>
+            <div key={ann.id} className={`announce-card ${ann.urgent ? 'urgent' : ''} ${isLoaded ? 'anim-fade-up' : ''}`} style={{animationDelay: `${0.5 + idx * 0.1}s`}}>
               <div className="announce-header">
                 <span className={`announce-badge ${ann.urgent ? 'urgent' : 'normal'}`}>{ann.urgent ? '🔴 Urgent' : '🔵 Info'}</span>
                 <span className="announce-date">{ann.date}</span>
@@ -345,14 +288,14 @@ export default function DashboardHome() {
       </section>
 
       {/* Jadwal Mendatang */}
-      <section className={`section ${isLoaded ? 'slide-in-right stagger-5' : ''}`}>
+      <section className={`section ${isLoaded ? 'anim-slide-right delay-8' : ''}`}>
         <div className="section-header">
           <h3>Jadwal Mendatang</h3>
           <button style={{border:'none',background:'none',color:'var(--accent)',fontSize:'12px',fontWeight:700,cursor:'pointer'}} onClick={() => setActiveModal('jadwal')}>Lihat Semua</button>
         </div>
         <div className="schedule-list">
           {defaultSchedule.slice(0, 3).map((sch, i) => (
-            <div key={i} className={`schedule-item ${isLoaded ? 'fade-in-up' : ''}`} style={{animationDelay: `${0.6 + i * 0.1}s`}}>
+            <div key={i} className={`schedule-item ${isLoaded ? 'anim-fade-up' : ''}`} style={{animationDelay: `${0.6 + i * 0.1}s`}}>
               <div className="schedule-date">
                 <div className="day">{sch.date.split(' ')[0]}</div>
                 <div className="month">{sch.date.split(' ')[1]}</div>
@@ -368,16 +311,16 @@ export default function DashboardHome() {
 
       {/* Laporan Terakhir */}
       {recentReports.length > 0 && (
-        <section className={`section ${isLoaded ? 'fade-in-up stagger-6' : ''}`}>
+        <section className={`section ${isLoaded ? 'anim-fade-up delay-9' : ''}`}>
           <div className="section-header">
             <h3>Laporan Terakhir</h3>
-            <Link href="/lapor_mulia/riwayat" style={{fontSize:'12px',color:'var(--accent)',fontWeight:700}}>Lihat Semua</Link>
+            <Link href="/lapor_mulia/riwayat" style={{fontSize:'var(--text-sm)',color:'var(--accent)',fontWeight:'var(--fw-bold)'}}>Lihat Semua</Link>
           </div>
           <div className="service-grid-modern">
             {recentReports.map((report, idx) => (
               <button
                 key={report.ticket}
-                className={`service-card-detailed ${isLoaded ? 'scale-in' : ''}`}
+                className={`service-card-detailed ${isLoaded ? 'anim-scale-in' : ''}`}
                 style={{animationDelay: `${0.7 + idx * 0.08}s`}}
                 onClick={() => setShowReportDetail(report)}
               >
@@ -419,7 +362,7 @@ export default function DashboardHome() {
       </Modal>
 
       <Modal isOpen={activeModal === 'keuangan'} onClose={() => setActiveModal(null)} title="Keuangan" icon="💰">
-        <div style={{marginBottom:12,padding:12,background:'#FFF3E0',borderRadius:12,fontSize:13,fontWeight:700}}>
+        <div style={{marginBottom:12,padding:12,background:'#FFF3E0',borderRadius:12,fontSize:'var(--text-sm)',fontWeight:'var(--fw-bold)'}}>
           Tagihan belum dibayar: <span style={{color:'var(--warning)'}}>{unpaidCount}</span>
         </div>
         <div className="billing-list">
@@ -472,15 +415,15 @@ export default function DashboardHome() {
 
       <Modal isOpen={activeModal === 'perpustakaan'} onClose={() => setActiveModal(null)} title="Perpustakaan" icon="📖">
         <div style={{marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Jam Operasional</div>
-          <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.6}}>
+          <div style={{fontWeight:'var(--fw-bold)',fontSize:'var(--text-base)',marginBottom:8}}>Jam Operasional</div>
+          <div style={{fontSize:'var(--text-sm)',color:'var(--muted)',lineHeight:'var(--lh-relaxed)'}}>
             Senin - Jumat: 08:00 - 16:00<br/>
             Sabtu: 08:00 - 12:00<br/>
             Minggu & Hari Libur: Tutup
           </div>
         </div>
         <div style={{marginBottom:16}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Buku Sedang Dipinjam</div>
+          <div style={{fontWeight:'var(--fw-bold)',fontSize:'var(--text-base)',marginBottom:8}}>Buku Sedang Dipinjam</div>
           <div className="report-list">
             {[
               { title: 'Pemrograman Web Lanjut', due: '30 Jun 2026', status: 'Dipinjam' },
@@ -494,7 +437,7 @@ export default function DashboardHome() {
           </div>
         </div>
         <div>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:8}}>Cari Buku</div>
+          <div style={{fontWeight:'var(--fw-bold)',fontSize:'var(--text-base)',marginBottom:8}}>Cari Buku</div>
           <div className="search-bar">
             <input type="text" placeholder="Judul buku atau ISBN..." />
             <button type="button">Cari</button>
@@ -546,102 +489,12 @@ export default function DashboardHome() {
         </div>
       </Modal>
 
-      <Modal isOpen={!!showReportDetail} onClose={() => setShowReportDetail(null)} title="" icon="">
-        {showReportDetail && (
-          <>
-            {/* Detail Header */}
-            <div className="report-detail-header">
-              <div className="report-detail-ticket">{showReportDetail.ticket}</div>
-              <div className="report-detail-title">{showReportDetail.title}</div>
-              <div className="report-detail-status">
-                {showReportDetail.status === 'Terkirim' && '📨'}
-                {showReportDetail.status === 'Diproses' && '⏳'}
-                {showReportDetail.status === 'Selesai' && '✅'}
-                {showReportDetail.status === 'Ditolak' && '❌'}
-                {' '}{showReportDetail.status}
-              </div>
-            </div>
-
-            {/* Detail Body */}
-            <div className="report-detail-body">
-              {/* Deskripsi */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Deskripsi</div>
-                <div className="report-detail-desc">{showReportDetail.description}</div>
-              </div>
-
-              {/* Info Grid */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Informasi</div>
-                <div className="report-detail-info">
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Kategori</div>
-                    <div className="report-detail-info-value">📂 {showReportDetail.category}</div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Urgensi</div>
-                    <div className="report-detail-info-value">
-                      {showReportDetail.priority === 'Darurat' && '🔴'}
-                      {showReportDetail.priority === 'Tinggi' && '🟠'}
-                      {showReportDetail.priority === 'Sedang' && '🟡'}
-                      {showReportDetail.priority === 'Rendah' && '🟢'}
-                      {' '}{showReportDetail.priority}
-                    </div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Lokasi</div>
-                    <div className="report-detail-info-value">📍 {showReportDetail.location}</div>
-                  </div>
-                  <div className="report-detail-info-item">
-                    <div className="report-detail-info-label">Pelapor</div>
-                    <div className="report-detail-info-value">👤 {showReportDetail.name}</div>
-                  </div>
-                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
-                    <div className="report-detail-info-label">Kontak</div>
-                    <div className="report-detail-info-value">📞 {showReportDetail.contact}</div>
-                  </div>
-                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
-                    <div className="report-detail-info-label">Tanggal</div>
-                    <div className="report-detail-info-value">📅 {showReportDetail.createdAt}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div className="report-detail-section">
-                <div className="report-detail-section-title">Status Timeline</div>
-                <div className="timeline">
-                  {(['Terkirim', 'Diproses', 'Selesai'] as ReportStatus[]).map((s, i) => {
-                    const current = getStatusStep(showReportDetail.status);
-                    const step = i + 1;
-                    return (
-                      <div key={s} className="timeline-step">
-                        <div className={`timeline-dot ${step < current ? 'done' : step === current ? 'active' : ''}`}>{step < current ? '✓' : step}</div>
-                        {i < 2 && <div className={`timeline-line ${step < current ? 'done' : step === current ? 'active' : ''}`} />}
-                        <div className="timeline-label">{s}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Ditolak Notice */}
-              {showReportDetail.status === 'Ditolak' && (
-                <div style={{padding:12,background:'#FFEBEE',borderRadius:12,fontSize:13,color:'var(--danger)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  ❌ Laporan ditolak oleh admin. Silakan hubungi BAAK untuk informasi lebih lanjut.
-                </div>
-              )}
-
-              {/* Selesai Notice */}
-              {showReportDetail.status === 'Selesai' && (
-                <div style={{padding:12,background:'#E8F5E9',borderRadius:12,fontSize:13,color:'var(--success)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
-                  ✅ Laporan telah selesai ditangani. Terima kasih atas partisipasi Anda.
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </Modal>
+      <ReportDetailModal
+        isOpen={!!showReportDetail}
+        report={showReportDetail}
+        onClose={() => setShowReportDetail(null)}
+      />
     </>
   );
 }
+

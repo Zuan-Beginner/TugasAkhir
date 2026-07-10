@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -153,6 +153,28 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return 'Selamat Malam';
   }, []);
 
+  const processingReports = useMemo(() =>
+    reports.filter((r) => r.status === 'Diproses'),
+    [reports]
+  );
+
+  const isPublicRoute = pathname === '/lapor_mulia' || pathname === '/lapor_mulia/login';
+
+  useEffect(() => {
+    if (!user && !isPublicRoute) {
+      router.replace('/lapor_mulia');
+    }
+  }, [isPublicRoute, pathname, router, user]);
+
+  if (!user && !isPublicRoute) {
+    return null;
+  }
+
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
+
+  // At this point, user is guaranteed to exist (protected route)
   if (!user) {
     return <LoginModal onLogin={login} />;
   }
@@ -164,60 +186,47 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <nav className="sidebar-nav">
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">
-            <FlagIcon />
-          </div>
-          <div className="sidebar-brand-text">
-            <h1>Mulia Lapor</h1>
-            <small>Universitas Mulia</small>
-          </div>
-        </div>
-
-        <div className="sidebar-nav-items">
-          <Link href="/lapor_mulia" className={`sidebar-nav-item ${isActive('/lapor_mulia') && pathname === '/lapor_mulia' ? 'active' : ''}`}>
-            <span className="sidebar-nav-icon"><HomeIcon /></span>
-            <span className="sidebar-nav-label">Beranda</span>
-          </Link>
-          <Link href="/lapor_mulia/layanan" className={`sidebar-nav-item ${isActive('/lapor_mulia/layanan') ? 'active' : ''}`}>
-            <span className="sidebar-nav-icon"><ClipboardIcon /></span>
-            <span className="sidebar-nav-label">Layanan</span>
-          </Link>
-          <Link href="/lapor_mulia/lapor" className={`sidebar-nav-item ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
-            <span className="sidebar-nav-icon"><PlusIcon /></span>
-            <span className="sidebar-nav-label">Lapor</span>
-          </Link>
-          <Link href="/lapor_mulia/forum" className={`sidebar-nav-item ${isActive('/lapor_mulia/forum') ? 'active' : ''}`}>
-            <span className="sidebar-nav-icon"><MessageIcon /></span>
-            <span className="sidebar-nav-label">Forum</span>
-          </Link>
-          <Link href="/lapor_mulia/riwayat" className={`sidebar-nav-item ${isActive('/lapor_mulia/riwayat') ? 'active' : ''}`}>
-            <span className="sidebar-nav-icon"><ChartIcon /></span>
-            <span className="sidebar-nav-label">Riwayat</span>
-          </Link>
-        </div>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-user">
-            <div className="sidebar-user-avatar">
-              <UserIcon />
+      <div className="app-layout">
+        <nav className="left-sidebar">
+          <Link href="/lapor_mulia" className="sidebar-brand">
+            <div className="sidebar-brand-icon">🏫</div>
+            <div className="sidebar-brand-text">
+              <h1>Mulia Lapor</h1>
+              <small>Universitas Mulia</small>
             </div>
-            <div className="sidebar-user-info">
-              <span className="sidebar-user-name">{user.name}</span>
-              <span className="sidebar-user-role">{isAdmin() ? 'Administrator' : 'Mahasiswa'}</span>
-            </div>
+          </Link>
+          <div className="sidebar-menu">
+            <Link href="/lapor_mulia/home" className={isActive('/lapor_mulia/home') ? 'active' : ''}>
+              <span className="nav-icon">🏠</span>
+              <span className="nav-label">Beranda</span>
+            </Link>
+            <Link href="/lapor_mulia/layanan" className={isActive('/lapor_mulia/layanan') ? 'active' : ''}>
+              <span className="nav-icon">📋</span>
+              <span className="nav-label">Layanan</span>
+            </Link>
+            <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
+              <span className="nav-icon">💬</span>
+              <span className="nav-label">Forum</span>
+            </Link>
+            <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
+              <span className="nav-icon">📊</span>
+              <span className="nav-label">Riwayat</span>
+            </Link>
+            {isAdmin() ? (
+              <Link href="/lapor_mulia/admin" className={`primary-action ${isActive('/lapor_mulia/admin') ? 'active' : ''}`}>
+                <span className="nav-icon">🛡️</span>
+                <span className="nav-label">Admin</span>
+              </Link>
+            ) : (
+              <Link href="/lapor_mulia/lapor" className={`primary-action ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
+                <span className="nav-icon">➕</span>
+                <span className="nav-label">Lapor</span>
+              </Link>
+            )}
           </div>
-          <button className="sidebar-logout" onClick={logout} title="Logout">
-            <LogoutIcon />
-          </button>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <div className="main-wrapper">
-        <header className="app-header">
+        </nav>
+        <div className="app-container">
+          <header className="app-header">
           <div className="header-top">
             <div className="header-title">
               <h2>{greeting}, {user.name}</h2>
@@ -244,31 +253,102 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="page-content">{children}</main>
-      </div>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="bottom-nav">
-        <Link href="/lapor_mulia" className={isActive('/lapor_mulia') && pathname === '/lapor_mulia' ? 'active' : ''}>
-          <span className="nav-icon"><HomeIcon /></span>
-          <span className="nav-label">Beranda</span>
-        </Link>
-        <Link href="/lapor_mulia/layanan" className={isActive('/lapor_mulia/layanan') ? 'active' : ''}>
-          <span className="nav-icon"><ClipboardIcon /></span>
-          <span className="nav-label">Layanan</span>
-        </Link>
-        <Link href="/lapor_mulia/lapor" className={`primary-action ${isActive('/lapor_mulia/lapor') ? 'active' : ''}`}>
-          <span className="nav-icon"><PlusIcon /></span>
-          <span className="nav-label">Lapor</span>
-        </Link>
-        <Link href="/lapor_mulia/forum" className={isActive('/lapor_mulia/forum') ? 'active' : ''}>
-          <span className="nav-icon"><MessageIcon /></span>
-          <span className="nav-label">Forum</span>
-        </Link>
-        <Link href="/lapor_mulia/riwayat" className={isActive('/lapor_mulia/riwayat') ? 'active' : ''}>
-          <span className="nav-icon"><ChartIcon /></span>
-          <span className="nav-label">Riwayat</span>
-        </Link>
-      </nav>
+
+
+        <Modal
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+          title="Notifikasi"
+          icon="🔔"
+        >
+          <style>{`
+            .notification-list {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+              max-height: 400px;
+              overflow-y: auto;
+              padding: 16px 0;
+            }
+            .notification-item {
+              padding: 16px;
+              background: var(--bg);
+              border-radius: 12px;
+              border-left: 4px solid var(--primary);
+              cursor: pointer;
+              transition: all 0.3s;
+            }
+            .notification-item:hover {
+              background: var(--bg-card);
+              transform: translateX(4px);
+            }
+            .notification-item-title {
+              font-weight: 700;
+              margin-bottom: 6px;
+              color: var(--text);
+              font-size: 15px;
+            }
+            .notification-item-desc {
+              font-size: 13px;
+              color: var(--muted);
+              margin-bottom: 6px;
+            }
+            .notification-item-meta {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+              color: var(--muted);
+            }
+            .notification-item-status {
+              background: var(--primary-light);
+              color: var(--primary);
+              padding: 4px 8px;
+              border-radius: 6px;
+              font-weight: 600;
+            }
+            .notification-empty {
+              text-align: center;
+              padding: 32px 16px;
+              color: var(--muted);
+            }
+            .notification-empty-icon {
+              font-size: 48px;
+              margin-bottom: 12px;
+            }
+          `}</style>
+
+          <div className="notification-list">
+            {processingReports.length > 0 ? (
+              processingReports.map((report) => (
+                <div
+                  key={report.ticket}
+                  className="notification-item"
+                  onClick={() => {
+                    router.push('/lapor_mulia/riwayat');
+                    setShowNotifications(false);
+                  }}
+                >
+                  <div className="notification-item-title">{report.title}</div>
+                  <div className="notification-item-desc">
+                    📍 {report.location} • {report.category}
+                  </div>
+                  <div className="notification-item-meta">
+                    <span>Ticket: {report.ticket}</span>
+                    <span className="notification-item-status">{report.status}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="notification-empty">
+                <div className="notification-empty-icon">😊</div>
+                <p>Tidak ada notifikasi baru</p>
+              </div>
+            )}
+          </div>
+        </Modal>
+        </div> {/* closing of app-container */}
+      </div> {/* closing of app-layout */}
     </>
   );
 }
