@@ -141,6 +141,28 @@ export default function AdminPage() {
     setSelectedRows(new Set());
   }
 
+  function exportToCSV() {
+    const headers = ['Tiket', 'Judul', 'Kategori', 'Prioritas', 'Status', 'Lokasi', 'Pelapor', 'Tanggal'];
+    const rows = sortedReports.map(r => [
+      r.ticket,
+      r.title,
+      r.category,
+      r.priority,
+      r.status,
+      r.location,
+      r.name,
+      r.createdAt,
+    ]);
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `laporan_mulia_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function exportToPDF() {
     try {
       // Dynamic import untuk jspdf dan autotable

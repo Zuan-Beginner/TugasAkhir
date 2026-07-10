@@ -28,7 +28,7 @@ export default function LoginPage() {
         setError('NIM hanya boleh berisi angka.');
         return;
       }
-      login({ name: name.trim(), nim: nim.trim(), role: 'user', avatar: selectedAvatar });
+      login(name.trim(), 'user', selectedAvatar, undefined, nim.trim());
       router.push('/lapor_mulia/home');
       return;
     }
@@ -43,7 +43,7 @@ export default function LoginPage() {
       return;
     }
 
-    login({ name: name.trim() || 'Admin', role: 'admin', avatar: selectedAvatar, nim: nim.trim() || undefined });
+    login(name.trim() || 'Admin', 'admin', selectedAvatar, undefined, nim.trim() || undefined);
     router.push('/lapor_mulia/admin');
   }
 

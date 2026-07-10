@@ -1,12 +1,12 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getReports } from './lib/storage';
 import type { Report } from './lib/types';
 import { AuthProvider, useAuth } from './lib/auth-context';
-import { LoginModal } from './components/LoginModal';
+import { LoginModal, Modal } from './components';
 import './styles/globals.css';
 
 const THEME_KEY = 'muliaTheme';
@@ -114,6 +114,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, login, logout, isAdmin } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     setReports(getReports());
@@ -159,6 +160,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 
   const isPublicRoute = pathname === '/lapor_mulia' || pathname === '/lapor_mulia/login';
+  const router = useRouter();
 
   useEffect(() => {
     if (!user && !isPublicRoute) {
