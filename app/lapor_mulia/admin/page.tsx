@@ -63,6 +63,8 @@ export default function AdminPage() {
   const [sortColumn, setSortColumn] = useState<'ticket' | 'title' | 'createdAt' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredReports = useMemo(() => {
     let result = reports;
@@ -98,7 +100,12 @@ export default function AdminPage() {
     });
   }, [filteredReports, sortColumn, sortDirection]);
 
-  // Gunakan semua laporan terurut (tidak ada pagination)
+  const paginatedReports = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return sortedReports.slice(start, start + itemsPerPage);
+  }, [sortedReports, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(sortedReports.length / itemsPerPage);
 
   function handleSort(column: 'ticket' | 'title' | 'createdAt') {
     if (sortColumn === column) {
@@ -120,10 +127,10 @@ export default function AdminPage() {
   }
 
   function toggleAllRows() {
-    if (selectedRows.size === sortedReports.length) {
+    if (selectedRows.size === paginatedReports.length) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(sortedReports.map(r => r.ticket)));
+      setSelectedRows(new Set(paginatedReports.map(r => r.ticket)));
     }
   }
 
@@ -435,7 +442,7 @@ export default function AdminPage() {
             width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px;
             font-size: 14px; outline: none; background: #FAFBFC;
           }
-          .login-field input:focus { border-color: var(--primary); background: white; }
+          .login-field input:focus { border-color: var(--primary); background: var(--card); }
           .login-btn {
             width: 100%; padding: 14px; border: none; border-radius: 14px;
             background: var(--primary); color: white; font-weight: 800; font-size: 15px;
@@ -565,11 +572,11 @@ export default function AdminPage() {
           border-radius: 12px; font-size: 14px; outline: none; background: var(--bg);
           transition: all 0.2s;
         }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123, 16, 35, 0.1); background: white; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123, 16, 35, 0.1); background: var(--card); }
         .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
         .filter-tab {
           padding: 10px 16px; border-radius: 10px; border: 2px solid var(--border); font-size: 13px;
-          font-weight: 700; cursor: pointer; background: white; color: var(--text);
+          font-weight: 700; cursor: pointer; background: var(--card); color: var(--text);
           transition: all 0.2s; white-space: nowrap;
         }
         .filter-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
@@ -584,7 +591,7 @@ export default function AdminPage() {
         }
         .toolbar-btn {
           padding: 10px 16px; border: 2px solid var(--border); border-radius: 10px;
-          background: white; font-size: 13px; font-weight: 700; cursor: pointer;
+          background: var(--card); font-size: 13px; font-weight: 700; cursor: pointer;
           transition: all 0.2s; display: flex; align-items: center; gap: 8px;
         }
         .toolbar-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
@@ -600,8 +607,8 @@ export default function AdminPage() {
           opacity: 0; animation: adminFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.48s forwards;
         }
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 10px; text-align: left; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        th, td { padding: 16px 14px; text-align: left; font-size: 13px; }
         th {
           background: linear-gradient(135deg, var(--primary-light), #fff);
           color: var(--text); font-weight: 800;
@@ -610,9 +617,9 @@ export default function AdminPage() {
           cursor: pointer; user-select: none; transition: background 0.2s;
         }
         th:hover { background: var(--primary-light); }
-        th.sortable { position: relative; padding-right: 24px; }
+        th.sortable { position: relative; padding-right: 28px; }
         .sort-icon {
-          position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
           font-size: 10px; color: var(--muted); transition: color 0.2s;
         }
         th.sorted .sort-icon { color: var(--primary); }
@@ -631,28 +638,29 @@ export default function AdminPage() {
         tbody tr:hover { background: var(--bg); transform: scale(1.001); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         tbody tr.selected { background: var(--primary-light); }
         tr:last-child td { border-bottom: none; }
-        .checkbox-cell { width: 36px; text-align: center; padding: 12px 8px; }
+        .checkbox-cell { width: 40px; text-align: center; }
         .row-checkbox {
-          width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);
+          width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);
         }
 
         .ticket-badge {
-          font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+          font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px;
           background: var(--primary-light); color: var(--primary); white-space: nowrap;
         }
         .status-badge {
-          font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+          font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px;
           white-space: nowrap;
         }
         .priority-badge {
-          font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+          font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
           white-space: nowrap;
         }
-        .cell-title { font-weight: 700; font-size: 12px; }
+        .cell-title { font-weight: 700; font-size: 13px; }
+        .cell-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
         .status-select {
-          padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);
-          font-size: 11px; font-weight: 600; cursor: pointer; background: white;
+          padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border);
+          font-size: 12px; font-weight: 600; cursor: pointer; background: var(--card);
         }
         .status-select:focus { border-color: var(--primary); outline: none; }
 
@@ -678,7 +686,7 @@ export default function AdminPage() {
         }
         .page-btn {
           width: 36px; height: 36px; border: 2px solid var(--border); border-radius: 8px;
-          background: white; cursor: pointer; font-size: 13px; font-weight: 700;
+          background: var(--card); cursor: pointer; font-size: 13px; font-weight: 700;
           transition: all 0.2s; display: grid; place-items: center;
         }
         .page-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
@@ -806,6 +814,38 @@ export default function AdminPage() {
           .toolbar { flex-direction: column; }
           .detail-grid { grid-template-columns: 1fr; }
         }
+
+        /* Dark mode overrides */
+        [data-theme="dark"] :root {
+          --bg: #0F1115; --card: #1A1D24; --text: #ECEDEE; --muted: #9BA1A6;
+          --border: #2A2E37; --primary-light: #2A1419;
+        }
+        [data-theme="dark"] body { background: #0F1115; }
+        [data-theme="dark"] .login-card { background: var(--card); }
+        [data-theme="dark"] .login-field input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .login-field input:focus { background: var(--card); }
+        [data-theme="dark"] .login-field label { color: var(--text); }
+        [data-theme="dark"] .admin-container { color: var(--text); }
+        [data-theme="dark"] .stat-box { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .toolbar { background: var(--card); }
+        [data-theme="dark"] .search-input { background: var(--bg); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .search-input:focus { background: var(--card); }
+        [data-theme="dark"] .filter-tab { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .toolbar-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .table-card { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] th { background: var(--primary-light); color: var(--text); }
+        [data-theme="dark"] tbody tr:hover { background: var(--bg); }
+        [data-theme="dark"] .status-select { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .page-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .modal-box { background: var(--card); }
+        [data-theme="dark"] .confirm-box { background: var(--card); }
+        [data-theme="dark"] .detail-item { background: var(--bg); }
+        [data-theme="dark"] .detail-desc { background: var(--bg); }
+        [data-theme="dark"] .detail-actions .btn-delete { background: #3D1520; }
+        [data-theme="dark"] .action-btn.view { background: #1A2744; }
+        [data-theme="dark"] .action-btn.delete { background: #3D1520; }
+        [data-theme="dark"] .pagination { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .page-input { background: var(--card); color: var(--text); border-color: var(--border); }
       `}</style>
 
       <div className="admin-container">
@@ -882,8 +922,8 @@ export default function AdminPage() {
                 🗑️ Hapus ({selectedRows.size})
               </button>
             )}
-            <button className="toolbar-btn success" type="button" onClick={exportToPDF}>
-              📄 Export PDF
+            <button className="toolbar-btn success" type="button" onClick={exportToCSV}>
+              📥 Export CSV
             </button>
           </div>
         </div>
@@ -905,7 +945,7 @@ export default function AdminPage() {
                         <input
                           type="checkbox"
                           className="row-checkbox"
-                          checked={selectedRows.size === sortedReports.length && sortedReports.length > 0}
+                          checked={selectedRows.size === paginatedReports.length && paginatedReports.length > 0}
                           onChange={toggleAllRows}
                         />
                       </th>
@@ -930,7 +970,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedReports.map((report) => (
+                    {paginatedReports.map((report) => (
                       <tr key={report.ticket} className={selectedRows.has(report.ticket) ? 'selected' : ''}>
                         <td className="checkbox-cell">
                           <input
@@ -943,6 +983,7 @@ export default function AdminPage() {
                         <td><span className="ticket-badge">{report.ticket}</span></td>
                         <td>
                           <div className="cell-title">{report.title}</div>
+                          <div className="cell-sub">{report.description.slice(0, 50)}...</div>
                         </td>
                         <td>{report.category}</td>
                         <td>{report.location}</td>
@@ -977,6 +1018,66 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <div className="pagination-info">
+                    Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, sortedReports.length)} dari {sortedReports.length} laporan
+                  </div>
+                  <div className="pagination-controls">
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                    >
+                      «
+                    </button>
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      ‹
+                    </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      ›
+                    </button>
+                    <button
+                      className="page-btn"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

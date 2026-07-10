@@ -142,7 +142,7 @@ export default function AdminForumLoginPage() {
         }
         .admin-input-group input:focus {
           border-color: #667eea;
-          background: white;
+          background: var(--card, white);
           box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
 
@@ -238,6 +238,14 @@ export default function AdminForumLoginPage() {
         .admin-feature-icon {
           font-size: 16px;
         }
+        /* Dark mode overrides */
+        [data-theme="dark"] .admin-login-container { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+        [data-theme="dark"] .admin-login-box { background: var(--card, #1A1D24); }
+        [data-theme="dark"] .admin-login-title { color: var(--text, #ECEDEE); }
+        [data-theme="dark"] .admin-login-subtitle { color: var(--muted, #9BA1A6); }
+        [data-theme="dark"] .admin-input-group input { background: var(--card, #1A1D24); color: var(--text, #ECEDEE); border-color: var(--border, #2A2E37); }
+        [data-theme="dark"] .admin-input-group label { color: var(--text, #ECEDEE); }
+        [data-theme="dark"] .admin-feature-item { color: var(--muted, #9BA1A6); }
       `}</style>
 
       <div className="admin-login-container">

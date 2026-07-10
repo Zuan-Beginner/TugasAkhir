@@ -244,8 +244,16 @@ export default function RiwayatPage() {
                   borderStyle: 'solid'
                 }}
               >
-                <div className="category-filter-icon" style={{fontSize: '24px'}}>{icons[s as keyof typeof icons]}</div>
-                <div className="category-filter-label" style={{fontWeight: isActive ? 800 : 600}}>{s}</div>
+                <div className="category-filter-icon" style={{
+                  fontSize: '24px',
+                  color: isActive ? colors[s as keyof typeof colors] : 'var(--text)',
+                  transform: isActive ? 'scale(1.15)' : 'none',
+                  transition: 'all 0.3s'
+                }}>{icons[s as keyof typeof icons]}</div>
+                <div className="category-filter-label" style={{
+                  fontWeight: isActive ? 800 : 600,
+                  color: isActive ? colors[s as keyof typeof colors] : 'var(--text)'
+                }}>{s}</div>
                 <div className="category-filter-count" style={{
                   background: isActive ? 'rgba(255,255,255,0.2)' : colors[s as keyof typeof colors] + '15',
                   color: isActive ? 'white' : colors[s as keyof typeof colors],

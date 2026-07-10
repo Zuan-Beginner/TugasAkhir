@@ -31,6 +31,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            var t = localStorage.getItem('muliaTheme');
+            if (t === 'dark' || t === 'light') {
+              document.documentElement.setAttribute('data-theme', t);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.setAttribute('data-theme', 'dark');
+            }
+          })();
+        ` }} />
+      </head>
       <body className="min-h-full flex flex-col bg-gray-50">
         {!isLaporMulia && <Navbar />}
         {!isLaporMulia && <BreadcrumbNav />}

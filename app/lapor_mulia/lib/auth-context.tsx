@@ -8,19 +8,14 @@ type AuthUser = {
   name: string;
   role: UserRole;
   avatar: string;
+  gender?: string;
   nim?: string;
-};
-
-type LoginPayload = {
-  name: string;
-  role: UserRole;
-  avatar: string;
-  nim?: string;
+  faculty?: string;
 };
 
 type AuthContextType = {
   user: AuthUser | null;
-  login: (payload: LoginPayload) => void;
+  login: (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => void;
   logout: () => void;
   isAdmin: () => boolean;
 };
@@ -39,16 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (saved) {
         try {
           setUser(JSON.parse(saved));
-        } catch {
-          localStorage.removeItem(AUTH_STORAGE_KEY);
+        } catch (e) {
+          console.error('Failed to parse auth user:', e);
         }
       }
       setIsLoaded(true);
     }
   }, []);
 
-  const login = ({ name, role, avatar, nim }: LoginPayload) => {
-    const newUser: AuthUser = { name, role, avatar, nim };
+  const login = (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => {
+    const newUser: AuthUser = { name, role, avatar, gender, nim, faculty };
     setUser(newUser);
     if (typeof window !== 'undefined') {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
@@ -62,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isAdmin = () => user?.role === 'admin';
+  const isAdmin = () => {
+    return user?.role === 'admin';
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAdmin }}>

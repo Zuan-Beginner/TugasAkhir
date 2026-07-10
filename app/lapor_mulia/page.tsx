@@ -428,6 +428,27 @@ export default function WelcomePage() {
           }
         }
       `}</style>
+      {/* Hero Carousel */}
+      <div className={`hero-banner ${isLoaded ? 'fade-in-up' : ''}`}>
+        <div className="hero-slider" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+          {heroImages.map((src, i) => (
+            <div key={i} className="hero-slide">
+              <img src={src} alt={`Gedung Universitas Mulia Balikpapan ${i + 1}`} />
+            </div>
+          ))}
+        </div>
+        <button className="hero-nav-btn left" type="button" onClick={prevSlide} aria-label="Sebelumnya">❮</button>
+        <button className="hero-nav-btn right" type="button" onClick={nextSlide} aria-label="Selanjutnya">❯</button>
+        <div className="hero-dots">
+          {heroImages.map((_, i) => (
+            <button key={i} className={`hero-dot ${i === currentSlide ? 'active' : ''}`} type="button" onClick={() => setCurrentSlide(i)} aria-label={`Slide ${i + 1}`} />
+          ))}
+        </div>
+        <div className="hero-text">
+          <h3>🏛️ Universitas Mulia</h3>
+          <p>Sistem Pengaduan & Layanan Kampus Terpadu</p>
+        </div>
+      </div>
 
       <div className="welcome-page">
         <div className="welcome-shell">
@@ -500,7 +521,128 @@ export default function WelcomePage() {
             Universitas Mulia - Sistem Pengaduan & Layanan Kampus Terpadu
           </footer>
         </div>
-      </div>
+      </Modal>
+
+      <Modal isOpen={activeModal === 'elearning'} onClose={() => setActiveModal(null)} title="E-Learning" icon="📚">
+        <div className="report-list">
+          {[
+            { code: 'CS201', name: 'Pemrograman Web', lecturer: 'Dr. Ahmad', status: 'Aktif', progress: 75 },
+            { code: 'CS301', name: 'Basis Data', lecturer: 'Prof. Siti', status: 'Aktif', progress: 60 },
+            { code: 'CS302', name: 'Jaringan Komputer', lecturer: 'Dr. Budi', status: 'Aktif', progress: 45 },
+            { code: 'CS401', name: 'Kecerdasan Buatan', lecturer: 'Dr. Dewi', status: 'Selesai', progress: 100 },
+          ].map((course, i) => (
+            <div key={i} className="report-card">
+              <div className="report-card-top">
+                <span className="report-ticket">{course.code}</span>
+                <span className="report-status" style={{background: course.status === 'Aktif' ? '#E3F2FD' : '#E8F5E9', color: course.status === 'Aktif' ? 'var(--accent)' : 'var(--success)'}}>{course.status}</span>
+              </div>
+              <div className="report-title">{course.name}</div>
+              <div className="report-meta"><span>👨‍🏫 {course.lecturer}</span></div>
+              <div className="course-progress">
+                <div className="course-progress-bar" style={{width:`${course.progress}%`}} />
+              </div>
+              <div className="course-progress-text">{course.progress}% selesai</div>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      <Modal isOpen={!!showReportDetail} onClose={() => setShowReportDetail(null)} title="" icon="">
+        {showReportDetail && (
+          <>
+            {/* Detail Header */}
+            <div className="report-detail-header">
+              <div className="report-detail-ticket">{showReportDetail.ticket}</div>
+              <div className="report-detail-title">{showReportDetail.title}</div>
+              <div className="report-detail-status">
+                {showReportDetail.status === 'Terkirim' && '📨'}
+                {showReportDetail.status === 'Diproses' && '⏳'}
+                {showReportDetail.status === 'Selesai' && '✅'}
+                {showReportDetail.status === 'Ditolak' && '❌'}
+                {' '}{showReportDetail.status}
+              </div>
+            </div>
+
+            {/* Detail Body */}
+            <div className="report-detail-body">
+              {/* Deskripsi */}
+              <div className="report-detail-section">
+                <div className="report-detail-section-title">Deskripsi</div>
+                <div className="report-detail-desc">{showReportDetail.description}</div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="report-detail-section">
+                <div className="report-detail-section-title">Informasi</div>
+                <div className="report-detail-info">
+                  <div className="report-detail-info-item">
+                    <div className="report-detail-info-label">Kategori</div>
+                    <div className="report-detail-info-value">📂 {showReportDetail.category}</div>
+                  </div>
+                  <div className="report-detail-info-item">
+                    <div className="report-detail-info-label">Urgensi</div>
+                    <div className="report-detail-info-value">
+                      {showReportDetail.priority === 'Darurat' && '🔴'}
+                      {showReportDetail.priority === 'Tinggi' && '🟠'}
+                      {showReportDetail.priority === 'Sedang' && '🟡'}
+                      {showReportDetail.priority === 'Rendah' && '🟢'}
+                      {' '}{showReportDetail.priority}
+                    </div>
+                  </div>
+                  <div className="report-detail-info-item">
+                    <div className="report-detail-info-label">Lokasi</div>
+                    <div className="report-detail-info-value">📍 {showReportDetail.location}</div>
+                  </div>
+                  <div className="report-detail-info-item">
+                    <div className="report-detail-info-label">Pelapor</div>
+                    <div className="report-detail-info-value">👤 {showReportDetail.name}</div>
+                  </div>
+                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
+                    <div className="report-detail-info-label">Kontak</div>
+                    <div className="report-detail-info-value">📞 {showReportDetail.contact}</div>
+                  </div>
+                  <div className="report-detail-info-item" style={{gridColumn:'1/-1'}}>
+                    <div className="report-detail-info-label">Tanggal</div>
+                    <div className="report-detail-info-value">📅 {showReportDetail.createdAt}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div className="report-detail-section">
+                <div className="report-detail-section-title">Status Timeline</div>
+                <div className="timeline">
+                  {(['Terkirim', 'Diproses', 'Selesai'] as ReportStatus[]).map((s, i) => {
+                    const current = getStatusStep(showReportDetail.status);
+                    const step = i + 1;
+                    return (
+                      <div key={s} className="timeline-step">
+                        <div className={`timeline-dot ${step < current ? 'done' : step === current ? 'active' : ''}`}>{step < current ? '✓' : step}</div>
+                        {i < 2 && <div className={`timeline-line ${step < current ? 'done' : step === current ? 'active' : ''}`} />}
+                        <div className="timeline-label">{s}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Ditolak Notice */}
+              {showReportDetail.status === 'Ditolak' && (
+                <div style={{padding:12,background:'#FFEBEE',borderRadius:12,fontSize:13,color:'var(--danger)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
+                  ❌ Laporan ditolak oleh admin. Silakan hubungi BAAK untuk informasi lebih lanjut.
+                </div>
+              )}
+
+              {/* Selesai Notice */}
+              {showReportDetail.status === 'Selesai' && (
+                <div style={{padding:12,background:'#E8F5E9',borderRadius:12,fontSize:13,color:'var(--success)',fontWeight:600,display:'flex',alignItems:'center',gap:8}}>
+                  ✅ Laporan telah selesai ditangani. Terima kasih atas partisipasi Anda.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </Modal>
     </>
   );
 }

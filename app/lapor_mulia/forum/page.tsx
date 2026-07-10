@@ -501,6 +501,9 @@ export default function ForumPage() {
           min-height: 80px;
           font-family: inherit;
           transition: all 0.3s;
+          color: var(--text);
+          caret-color: var(--primary);
+          background: var(--bg);
         }
         .compose-input:focus {
           border-color: var(--primary);
@@ -709,6 +712,18 @@ export default function ForumPage() {
           background: linear-gradient(135deg, #fbbf24, #f59e0b);
           border-color: #f59e0b;
         }
+        /* Dark mode overrides */
+        [data-theme="dark"] .forum-container { color: var(--text); }
+        [data-theme="dark"] .forum-banner { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+        [data-theme="dark"] .filter-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .user-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .message-card { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .reply-card { background: var(--bg); border-color: var(--border); }
+        [data-theme="dark"] .reply-input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .message-input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .reply-input::placeholder, [data-theme="dark"] .message-input::placeholder { color: var(--muted); }
+        [data-theme="dark"] .modal-content { background: var(--card); }
+        [data-theme="dark"] .context-menu { background: var(--card); border-color: var(--border); }
       `}</style>
 
       <div className="forum-container">
