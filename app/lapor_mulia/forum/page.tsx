@@ -46,6 +46,54 @@ function getPriorityColor(priority?: string): string {
   }
 }
 
+// Anonimisasi Identitas
+const ANON_MAP_KEY = 'muliaForumAnonMap';
+
+function getAnonMap(): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  const data = localStorage.getItem(ANON_MAP_KEY);
+  return data ? JSON.parse(data) : {};
+}
+
+function saveAnonMap(map: Record<string, number>) {
+  localStorage.setItem(ANON_MAP_KEY, JSON.stringify(map));
+}
+
+function getAnonNumber(name: string): number {
+  const map = getAnonMap();
+  if (map[name] !== undefined) return map[name];
+
+  const existingNumbers = Object.values(map);
+  const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+  const newNum = maxNum + 1;
+
+  map[name] = newNum;
+  saveAnonMap(map);
+  return newNum;
+}
+
+function createAnonUtils(isAdminUser: boolean) {
+  function getAnonName(name: string): string {
+    if (isAdminUser) return name;
+    if (!name || name === 'Anonim') return 'Anonim';
+    const num = getAnonNumber(name);
+    return `Mahasiswa ${num}`;
+  }
+
+  function getDisplayName(name: string): { display: string; real?: string } {
+    if (isAdminUser) {
+      const anonName = getAnonName(name);
+      return {
+        display: name !== anonName ? `${name}` : name,
+        real: name !== anonName ? name : undefined
+      };
+    }
+    return { display: getAnonName(name) };
+  }
+
+  return { getAnonName, getDisplayName };
+}
+
 export default function ForumPage() {
   const { user: authUser, isAdmin } = useAuth();
   const [messages, setMessages] = useState<ForumMessage[]>([]);
@@ -57,6 +105,7 @@ export default function ForumPage() {
   const isLoaded = true;
 
   const user = authUser ? { name: authUser.name, avatar: authUser.avatar } : null;
+  const { getDisplayName } = createAnonUtils(isAdmin());
 
   useEffect(() => {
     loadMessages();
@@ -903,7 +952,9 @@ export default function ForumPage() {
                     <div className="report-author">
                       <div className="report-author-avatar">{msg.avatar}</div>
                       <div>
-                        <div className="report-author-name">{msg.author}</div>
+                        <div className="report-author-name">
+                          {getDisplayName(msg.author).display}
+                        </div>
                         <div className="report-author-time">{msg.timestamp}</div>
                       </div>
                     </div>
@@ -947,7 +998,9 @@ export default function ForumPage() {
                                 <div className="message-author">
                                   <div className="message-avatar" style={{width: '28px', height: '28px', fontSize: '16px'}}>{reply.avatar}</div>
                                   <div>
-                                    <div className="message-author-name" style={{fontSize: '13px'}}>{reply.author}</div>
+                                    <div className="message-author-name" style={{fontSize: '13px'}}>
+                                      {getDisplayName(reply.author).display}
+                                    </div>
                                     <div className="message-time" style={{fontSize: '10px'}}>{reply.timestamp}</div>
                                   </div>
                                 </div>
@@ -1003,7 +1056,7 @@ export default function ForumPage() {
                       <div className="message-avatar">{msg.avatar}</div>
                       <div>
                         <div className="message-author-name">
-                          {msg.author}
+                          {getDisplayName(msg.author).display}
                           {msg.isPinned && (
                             <span className="pinned-badge">
                               📌 Dipasang
@@ -1053,7 +1106,9 @@ export default function ForumPage() {
                               <div className="message-author">
                                 <div className="message-avatar" style={{width: '28px', height: '28px', fontSize: '16px'}}>{reply.avatar}</div>
                                 <div>
-                                  <div className="message-author-name" style={{fontSize: '13px'}}>{reply.author}</div>
+                                  <div className="message-author-name" style={{fontSize: '13px'}}>
+                                    {getDisplayName(reply.author).display}
+                                  </div>
                                   <div className="message-time" style={{fontSize: '10px'}}>{reply.timestamp}</div>
                                 </div>
                               </div>

@@ -20,15 +20,17 @@ export default function LoginPage() {
   function handleSubmit() {
     setError('');
     if (selectedRole === 'user') {
-      if (!name.trim() || !nim.trim()) {
-        setError('NIM dan Nama harus diisi.');
+      if (!nim.trim()) {
+        setError('NIM harus diisi.');
         return;
       }
       if (!/^\d+$/.test(nim.trim())) {
         setError('NIM hanya boleh berisi angka.');
         return;
       }
-      login(name.trim(), 'user', selectedAvatar, undefined, nim.trim());
+      // Nama otomatis dari NIM
+      const autoName = name.trim() || `Mahasiswa ${nim.trim()}`;
+      login(autoName, 'user', selectedAvatar, undefined, nim.trim());
       router.push('/lapor_mulia/home');
       return;
     }
@@ -62,8 +64,11 @@ export default function LoginPage() {
           from { opacity: 0; transform: translateY(32px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
+<<<<<<< HEAD
+=======
           to { opacity: 1; transform: translateY(0); }
         }
+>>>>>>> 28cf1dbfc8506dadfd2e8a1e5984d8a5720a8f1d
         .login-box {
           background: white;
           border-radius: 24px;
@@ -252,7 +257,7 @@ export default function LoginPage() {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                placeholder="NIM"
+                placeholder="NIM (wajib)"
                 value={nim}
                 onChange={(e) => setNim(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
@@ -260,7 +265,7 @@ export default function LoginPage() {
               <input
                 className="login-input"
                 type="text"
-                placeholder="Nama Lengkap"
+                placeholder="Nama (opsional, default: Mahasiswa {NIM})"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
