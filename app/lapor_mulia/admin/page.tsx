@@ -1,14 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { STORAGE_KEY, statuses } from '../lib/constants';
 import type { Report, ReportStatus } from '../lib/types';
 import { getForumMessages, saveForumMessages } from '../lib/storage';
 
 type FilterStatus = 'Semua' | ReportStatus;
 
-const filterStatuses: FilterStatus[] = ['Semua', ...statuses];
+const filterStatuses: FilterStatus[] = ['Semua', 'Terkirim', 'Diproses', 'Selesai', 'Ditolak'];
 
 const priorityColors: Record<string, string> = {
   'Rendah': '#4CAF50',
@@ -25,16 +24,7 @@ const statusColors: Record<ReportStatus, string> = {
 };
 
 export default function AdminPage() {
-  const [reports, setReports] = useState<Report[]>(() => {
-    if (typeof window === 'undefined') return [];
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (!saved) return [];
-    try {
-      return JSON.parse(saved) as Report[];
-    } catch {
-      return [];
-    }
-  });
+  const [reports, setReports] = useState<Report[]>([]);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -479,30 +469,9 @@ export default function AdminPage() {
 
         .admin-page { max-width: 1400px; margin: 0 auto; animation: adminFadeUp 0.6s ease; }
         @keyframes adminFadeUp {
-            from { opacity: 0; transform: translateY(32px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-        @keyframes adminFadeDown {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(32px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes adminScaleIn {
-            from { opacity: 0; transform: translateY(16px) scale(0.92); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-        .admin-btn.danger { background: var(--danger); color: white; }
-        .admin-badge {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 6px 12px; border-radius: 8px; background: rgba(255,255,255,0.15);
-          color: white; font-size: 12px; font-weight: 700;
-        }
-
-        /* Admin Greeting */
-        .admin-greeting {
-          display: flex; flex-direction: column; align-items: flex-end; margin-right: 16px;
-        }
-        .greeting-text { font-size: 14px; font-weight: 600; color: white; }
-        .greeting-date { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px; }
 
         /* Stats */
         .stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; }

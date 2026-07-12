@@ -48,6 +48,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, logout } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     setReports(getReports());
@@ -140,12 +141,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             display: flex; align-items: center; justify-content: center; transition: background 0.2s;
           }
           .theme-toggle:hover { background: rgba(255,255,255,0.3); }
-          .admin-profile-btn { text-decoration: none; }
-          .admin-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: rgba(255,255,255,0.3); display: flex; align-items: center;
-            justify-content: center; font-weight: 700; color: white; font-size: 16px;
+          .admin-badge {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            color: white; font-size: 13px; font-weight: 600;
           }
+          .admin-badge svg { stroke: white; }
           .logout-btn {
             background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; padding: 8px 16px; color: white; cursor: pointer;
@@ -173,9 +175,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               <button className="theme-toggle" onClick={toggleTheme}>
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
-              <Link href="/lapor_mulia/profil" className="admin-profile-btn">
-                <span className="admin-avatar">{user.name.charAt(0).toUpperCase()}</span>
-              </Link>
+              <span className="admin-badge" title="Administrator">
+                <ShieldIcon />
+                Admin
+              </span>
               <button className="logout-btn" onClick={() => { logout(); router.push('/lapor_mulia'); }}>
                 Keluar
               </button>
