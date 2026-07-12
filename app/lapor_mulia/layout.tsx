@@ -113,6 +113,80 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return pathname.startsWith(path);
   };
 
+  // Admin page gets standalone layout (no sidebar)
+  const isAdminPage = pathname === '/lapor_mulia/admin';
+
+  if (isAdminPage && isAdmin()) {
+    return (
+      <>
+        <style>{`
+          .admin-full-layout { min-height: 100vh; display: flex; flex-direction: column; }
+          .admin-full-header {
+            height: 64px; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex; align-items: center; padding: 0 24px; gap: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          .admin-full-header-left { display: flex; align-items: center; }
+          .admin-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: white; }
+          .admin-brand-icon { font-size: 28px; }
+          .admin-brand-text h1 { font-size: 18px; font-weight: 700; margin: 0; color: white; }
+          .admin-brand-text small { font-size: 11px; opacity: 0.8; color: rgba(255,255,255,0.8); }
+          .admin-full-header-center { flex: 1; display: flex; justify-content: center; }
+          .admin-greeting { color: white; font-size: 15px; font-weight: 500; }
+          .admin-full-header-right { display: flex; align-items: center; gap: 16px; }
+          .theme-toggle {
+            background: rgba(255,255,255,0.2); border: none; border-radius: 8px;
+            padding: 8px; cursor: pointer; color: white;
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+          }
+          .theme-toggle:hover { background: rgba(255,255,255,0.3); }
+          .admin-profile-btn { text-decoration: none; }
+          .admin-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255,255,255,0.3); display: flex; align-items: center;
+            justify-content: center; font-weight: 700; color: white; font-size: 16px;
+          }
+          .logout-btn {
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px; padding: 8px 16px; color: white; cursor: pointer;
+            font-size: 13px; font-weight: 600; transition: all 0.2s;
+          }
+          .logout-btn:hover { background: rgba(255,255,255,0.3); }
+          .admin-full-content { flex: 1; padding: 24px; background: var(--bg); color: var(--text); }
+          [data-theme="dark"] .admin-full-content { background: linear-gradient(180deg, #1a1f35 0%, #1e2442 50%, #1a1f35 100%); }
+        `}</style>
+        <div className="admin-full-layout">
+          <header className="admin-full-header">
+            <div className="admin-full-header-left">
+              <div className="admin-brand">
+                <span className="admin-brand-icon">⚑</span>
+                <div className="admin-brand-text">
+                  <h1>Mulia Lapor</h1>
+                  <small>Panel Administrator</small>
+                </div>
+              </div>
+            </div>
+            <div className="admin-full-header-center">
+              <span className="admin-greeting">Selamat datang, {user.name}</span>
+            </div>
+            <div className="admin-full-header-right">
+              <button className="theme-toggle" onClick={toggleTheme}>
+                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              </button>
+              <Link href="/lapor_mulia/profil" className="admin-profile-btn">
+                <span className="admin-avatar">{user.name.charAt(0).toUpperCase()}</span>
+              </Link>
+              <button className="logout-btn" onClick={() => { logout(); router.push('/lapor_mulia'); }}>
+                Keluar
+              </button>
+            </div>
+          </header>
+          <main className="admin-full-content">{children}</main>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="app-layout">

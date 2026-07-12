@@ -8,7 +8,6 @@ import { getForumMessages, saveForumMessages } from '../lib/storage';
 
 type FilterStatus = 'Semua' | ReportStatus;
 
-const ADMIN_KEY = 'muliaAdminSession';
 const filterStatuses: FilterStatus[] = ['Semua', ...statuses];
 
 const priorityColors: Record<string, string> = {
@@ -36,12 +35,6 @@ export default function AdminPage() {
       return [];
     }
   });
-  const [adminCode, setAdminCode] = useState('');
-  const [adminLoggedIn, setAdminLoggedIn] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(ADMIN_KEY) === 'true';
-  });
-  const [loginError, setLoginError] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -382,21 +375,72 @@ export default function AdminPage() {
     darurat: reports.filter((r) => r.priority === 'Darurat').length,
   }), [reports]);
 
-  function adminLogin() {
-    if (adminCode.trim() !== 'admin123') {
-      setLoginError('Kode admin salah. Silakan coba lagi.');
-      return;
-    }
-    setAdminLoggedIn(true);
-    setLoginError('');
-    window.localStorage.setItem(ADMIN_KEY, 'true');
-  }
+  // Stats baru untuk dashboard
+  const todayReports = useMemo(() => {
+    const today = new Date().toLocaleDateString('id-ID');
+    return reports.filter(r => r.createdAt.includes(today)).length;
+  }, [reports]);
 
-  function adminLogout() {
-    setAdminLoggedIn(false);
-    window.localStorage.removeItem(ADMIN_KEY);
-    setAdminCode('');
-  }
+  const urgentReports = useMemo(() => {
+    return reports.filter(r => r.priority === 'Darurat' || r.priority === 'Tinggi').length;
+  }, [reports]);
+
+  const unprocessedReports = useMemo(() => {
+    return reports.filter(r => r.status === 'Terkirim').length;
+  }, [reports]);
+
+  // Top 5 kategori
+  const categoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    reports.forEach(r => {
+      counts[r.category] = (counts[r.category] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [reports]);
+
+  const maxCategoryCount = useMemo(() => {
+    return categoryStats.length > 0 ? categoryStats[0][1] : 1;
+  }, [categoryStats]);
+
+  // 5 laporan terbaru (perlu ditindaklanjuti)
+  const recentUrgent = useMemo(() => {
+    return reports
+      .filter(r => r.status === 'Terkirim')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [reports]);
+
+  // Ringkasan performa
+  const performanceStats = useMemo(() => {
+    const completed = reports.filter(r => r.status === 'Selesai');
+    const completionRate = reports.length > 0 ? Math.round((completed.length / reports.length) * 100) : 0;
+    return { completionRate };
+  }, [reports]);
+
+  // Kategori icons
+  const categoryIcons: Record<string, string> = {
+    'Fasilitas': '🪑',
+    'Kebersihan': '🧹',
+    'Bullying': '🛡️',
+    'Keamanan': '🚨',
+    'Sistem': '💻',
+    'Layanan': '🏢',
+    'Lingkungan': '🌿',
+    'Lainnya': '✍️',
+  };
+
+  const categoryColors: Record<string, string> = {
+    'Fasilitas': '#1E88E5',
+    'Kebersihan': '#4CAF50',
+    'Bullying': '#E53935',
+    'Keamanan': '#FF9800',
+    'Sistem': '#7B1FA2',
+    'Layanan': '#00897B',
+    'Lingkungan': '#43A047',
+    'Lainnya': '#546E7A',
+  };
 
   function saveReports(next: Report[]) {
     setReports(next);
@@ -417,89 +461,6 @@ export default function AdminPage() {
     setSelectedReport(null);
   }
 
-  if (!adminLoggedIn) {
-    return (
-      <>
-        <style>{`
-          :root {
-            --primary: #7b1023; --primary-dark: #520816; --primary-light: #FDF2F4;
-            --accent: #1E88E5; --accent-light: #E3F2FD; --gold: #d7a640;
-            --success: #4CAF50; --warning: #FF9800; --danger: #E53935;
-            --bg: #F5F7FA; --card: #FFFFFF; --text: #1A1A1A; --muted: #6B7280;
-            --border: #E5E7EB; --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --shadow-lg: 0 8px 32px rgba(0,0,0,0.12); --radius: 16px; --radius-lg: 24px;
-          }
-          * { margin: 0; padding: 0; box-sizing: border-box; font-family: Inter, Poppins, -apple-system, sans-serif; }
-          body { background: var(--bg); color: var(--text); min-height: 100vh; }
-          @keyframes adminFadeUp {
-            from { opacity: 0; transform: translateY(32px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          @keyframes adminScaleIn {
-            from { opacity: 0; transform: translateY(16px) scale(0.92); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          .login-page {
-            min-height: 100vh; display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            padding: 20px;
-          }
-          .login-card {
-            background: var(--card); border-radius: var(--radius-lg); padding: 40px 32px;
-            width: 100%; max-width: 400px; box-shadow: var(--shadow-lg); text-align: center;
-            opacity: 0; animation: adminScaleIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-          }
-          .login-icon { font-size: 48px; margin-bottom: 16px; }
-          .login-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
-          .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-          .login-field { display: grid; gap: 6px; margin-bottom: 16px; text-align: left; }
-          .login-field label { font-size: 12px; font-weight: 700; }
-          .login-field input {
-            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px;
-            font-size: 14px; outline: none; background: #FAFBFC;
-          }
-          .login-field input:focus { border-color: var(--primary); background: var(--card); }
-          .login-btn {
-            width: 100%; padding: 14px; border: none; border-radius: 14px;
-            background: var(--primary); color: white; font-weight: 800; font-size: 15px;
-            cursor: pointer; box-shadow: 0 4px 16px rgba(123,16,35,0.3);
-            transition: transform 0.15s;
-          }
-          .login-btn:hover { transform: translateY(-2px); }
-          .login-error {
-            margin-top: 12px; padding: 10px; border-radius: 10px; font-size: 13px;
-            font-weight: 700; background: #FFEBEE; color: var(--danger); display: none;
-          }
-          .login-error.show { display: block; }
-          .login-back {
-            display: inline-block; margin-top: 16px; font-size: 13px; color: var(--accent);
-            font-weight: 600; text-decoration: none;
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .login-card {
-              opacity: 1; transform: none; animation: none;
-            }
-          }
-        `}</style>
-        <div className="login-page">
-          <div className="login-card">
-            <div className="login-icon">🔐</div>
-            <div className="login-title">Admin Panel</div>
-            <div className="login-sub">Masukkan kode admin untuk mengakses panel</div>
-            <div className="login-field">
-              <label>Kode Admin</label>
-              <input type="password" placeholder="Masukkan kode admin" value={adminCode} onChange={(e) => { setAdminCode(e.target.value); setLoginError(''); }} onKeyDown={(e) => e.key === 'Enter' && adminLogin()} />
-            </div>
-            <button className="login-btn" type="button" onClick={adminLogin}>Masuk</button>
-            <div className={`login-error ${loginError ? 'show' : ''}`}>{loginError}</div>
-            <Link href="/lapor_mulia" className="login-back">← Kembali ke Beranda</Link>
-            <div style={{marginTop: 16, fontSize: 11, color: 'var(--muted)'}}>Kode demo: <b>admin123</b></div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <style>{`
@@ -516,7 +477,7 @@ export default function AdminPage() {
         body { background: var(--bg); color: var(--text); min-height: 100vh; }
         a { color: inherit; text-decoration: none; }
 
-        .admin-container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .admin-page { max-width: 1400px; margin: 0 auto; animation: adminFadeUp 0.6s ease; }
         @keyframes adminFadeUp {
             from { opacity: 0; transform: translateY(32px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
@@ -529,34 +490,19 @@ export default function AdminPage() {
             from { opacity: 0; transform: translateY(16px) scale(0.92); }
             to { opacity: 1; transform: translateY(0) scale(1); }
           }
-
-        /* Header */
-        .admin-header {
-          background: var(--primary); padding: 16px; margin: 0 -16px;
-          border-radius: 0 0 24px 24px; margin-bottom: 20px;
-          opacity: 0; animation: adminFadeDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-        .admin-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .admin-brand { display: flex; align-items: center; gap: 10px; color: white; }
-        .admin-brand-icon {
-          width: 40px; height: 40px; border-radius: 12px;
-          background: rgba(255,255,255,0.2); display: grid; place-items: center; font-size: 20px;
-        }
-        .admin-brand h1 { font-size: 16px; font-weight: 800; }
-        .admin-brand small { font-size: 11px; opacity: 0.8; display: block; }
-        .admin-actions { display: flex; gap: 8px; }
-        .admin-btn {
-          padding: 8px 14px; border-radius: 10px; border: none; font-size: 12px;
-          font-weight: 700; cursor: pointer; transition: transform 0.15s;
-        }
-        .admin-btn:hover { transform: translateY(-1px); }
-        .admin-btn.outline { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); }
         .admin-btn.danger { background: var(--danger); color: white; }
         .admin-badge {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 6px 12px; border-radius: 8px; background: rgba(255,255,255,0.15);
           color: white; font-size: 12px; font-weight: 700;
         }
+
+        /* Admin Greeting */
+        .admin-greeting {
+          display: flex; flex-direction: column; align-items: flex-end; margin-right: 16px;
+        }
+        .greeting-text { font-size: 14px; font-weight: 600; color: white; }
+        .greeting-date { font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 2px; }
 
         /* Stats */
         .stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; }
@@ -615,6 +561,108 @@ export default function AdminPage() {
         .toolbar-btn.danger:hover { background: var(--danger); color: white; }
         .toolbar-btn.success { border-color: var(--success); color: var(--success); }
         .toolbar-btn.success:hover { background: var(--success); color: white; }
+
+        /* Quick Stats */
+        .quick-stats-row {
+          display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+        }
+        .quick-stat-card {
+          background: var(--card); border-radius: 20px; padding: 24px;
+          display: flex; align-items: center; gap: 16px;
+          box-shadow: var(--shadow); transition: all 0.3s;
+          border: 1px solid var(--border); position: relative; overflow: hidden;
+          opacity: 0; animation: adminFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .quick-stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); border-radius: 4px 0 0 4px; }
+        .quick-stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .quick-stat-card:nth-child(2) { animation-delay: 0.15s; }
+        .quick-stat-card:nth-child(3) { animation-delay: 0.2s; }
+        .quick-stat-card:nth-child(4) { animation-delay: 0.25s; }
+        .quick-stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+        .quick-stat-icon {
+          width: 64px; height: 64px; border-radius: 16px;
+          display: grid; place-items: center; font-size: 28px; color: white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .quick-stat-num { font-size: 32px; font-weight: 800; color: var(--text); line-height: 1; }
+        .quick-stat-label { font-size: 14px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+        /* Charts */
+        .charts-row {
+          display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px;
+        }
+        .chart-card {
+          background: var(--card); border-radius: 20px; padding: 24px;
+          box-shadow: var(--shadow); border: 1px solid var(--border);
+          opacity: 0; animation: adminFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+        }
+        .chart-title {
+          font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 20px;
+          display: flex; align-items: center; gap: 8px;
+        }
+        .chart-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, var(--border), transparent); margin-left: 12px; }
+        .empty-chart {
+          text-align: center; padding: 32px; color: var(--muted); font-size: 13px;
+        }
+
+        /* Bar Chart */
+        .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+        .bar-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+        .bar-label { width: 80px; font-size: 13px; font-weight: 600; color: var(--muted); }
+        .bar-track { flex: 1; height: 28px; background: var(--bg); border-radius: 14px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 14px; transition: width 0.8s ease; min-width: 4px; position: relative; }
+        .bar-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent); border-radius: 14px; }
+        .bar-value { width: 40px; text-align: right; font-size: 15px; font-weight: 700; color: var(--text); }
+
+        /* Kategori List */
+        .kategori-list { display: flex; flex-direction: column; gap: 4px; }
+        .kategori-item {
+          display: flex; align-items: center; gap: 12px; padding: 12px 8px;
+          border-bottom: 1px solid var(--border);
+          border-radius: 8px; transition: all 0.2s;
+        }
+        .kategori-item:hover { background: var(--bg); }
+        .kategori-item:last-child { border-bottom: none; }
+        .kategori-rank { font-size: 12px; font-weight: 700; color: var(--primary); width: 28px; height: 28px; display: grid; place-items: center; background: var(--primary-light); border-radius: 8px; }
+        .kategori-icon { font-size: 20px; }
+        .kategori-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+        .kategori-bar { width: 100px; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+        .kategori-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+        .kategori-count { width: 32px; text-align: right; font-size: 14px; font-weight: 700; color: var(--text); }
+
+        /* Recent List */
+        .recent-list { display: flex; flex-direction: column; gap: 10px; }
+        .recent-item {
+          display: flex; align-items: center; gap: 14px; padding: 14px;
+          border-radius: 14px; background: var(--bg); cursor: pointer;
+          transition: all 0.2s; border: 1px solid transparent;
+        }
+        .recent-item:hover { background: var(--primary-light); transform: translateX(4px); border-color: var(--primary); }
+        .recent-status {
+          width: 40px; height: 40px; border-radius: 10px;
+          display: grid; place-items: center; font-size: 16px;
+        }
+        .recent-info { flex: 1; }
+        .recent-ticket { font-size: 12px; font-weight: 700; color: var(--primary); }
+        .recent-title { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
+        .recent-meta { text-align: right; }
+        .recent-category { font-size: 12px; color: var(--muted); display: block; padding: 2px 8px; background: var(--card); border-radius: 6px; }
+        .recent-time { font-size: 11px; color: var(--muted); margin-top: 4px; display: block; }
+        .recent-urgent {
+          padding: 4px 10px; border-radius: 8px; font-size: 11px;
+          font-weight: 700; color: white;
+        }
+
+        /* Performance */
+        .performance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .performance-stat { text-align: center; padding: 20px; background: var(--bg); border-radius: 14px; border: 1px solid var(--border); }
+        .performance-value { font-size: 32px; font-weight: 800; }
+        .performance-label { font-size: 13px; color: var(--muted); margin-top: 8px; font-weight: 500; }
+        .performance-bar {
+          width: 100%; height: 10px; background: var(--border); border-radius: 5px;
+          margin-top: 16px; overflow: hidden;
+        }
+        .performance-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; background: linear-gradient(90deg, var(--success), #81C784); }
 
         /* Table */
         .table-card {
@@ -799,8 +847,7 @@ export default function AdminPage() {
 
         /* Responsive: Tablet */
         @media (min-width: 768px) {
-          .admin-container { padding: 0 24px; }
-          .admin-header { border-radius: 0 0 28px 28px; padding: 20px 24px; margin: 0 -24px; margin-bottom: 24px; }
+          .admin-page { padding: 0 8px; }
           .stats-row { grid-template-columns: repeat(6, 1fr); gap: 12px; }
           .stat-box { padding: 16px; border-radius: 16px; }
           .stat-box .num { font-size: 28px; min-height: 28px; }
@@ -809,10 +856,7 @@ export default function AdminPage() {
 
         /* Responsive: Desktop */
         @media (min-width: 1024px) {
-          .admin-container { padding: 0 32px; }
-          .admin-header { border-radius: 0 0 32px 32px; padding: 24px 32px; margin: 0 -32px; margin-bottom: 28px; }
-          .admin-brand-icon { width: 48px; height: 48px; font-size: 24px; }
-          .admin-brand h1 { font-size: 18px; }
+          .admin-page { padding: 0 16px; }
           .stats-row { gap: 14px; margin-bottom: 24px; }
           .stat-box { padding: 20px; }
           .stat-box .num { font-size: 32px; min-height: 32px; }
@@ -829,60 +873,223 @@ export default function AdminPage() {
           .stat-box .num { font-size: 20px; min-height: 20px; }
           .toolbar { flex-direction: column; }
           .detail-grid { grid-template-columns: 1fr; }
+          .quick-stats-row { grid-template-columns: repeat(2, 1fr); }
+          .quick-stat-card { padding: 16px; }
+          .quick-stat-icon { width: 48px; height: 48px; font-size: 20px; }
+          .quick-stat-num { font-size: 24px; }
+          .charts-row { grid-template-columns: 1fr; }
+          .performance-grid { grid-template-columns: 1fr; }
         }
 
         /* Dark mode overrides */
         [data-theme="dark"] :root {
-          --bg: #0F1115; --card: #1A1D24; --text: #ECEDEE; --muted: #9BA1A6;
-          --border: #2A2E37; --primary-light: #2A1419;
+          --bg: #1a1f35; --card: #252b45; --text: #e8eaf6; --muted: #9fa8c2;
+          --border: #3d4566; --primary-light: rgba(255,255,255,0.08); --accent: #64b5f6;
         }
-        [data-theme="dark"] body { background: #0F1115; }
-        [data-theme="dark"] .login-card { background: var(--card); }
-        [data-theme="dark"] .login-field input { background: var(--card); color: var(--text); border-color: var(--border); }
-        [data-theme="dark"] .login-field input:focus { background: var(--card); }
-        [data-theme="dark"] .login-field label { color: var(--text); }
-        [data-theme="dark"] .admin-container { color: var(--text); }
-        [data-theme="dark"] .stat-box { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] body { background: linear-gradient(180deg, #1a1f35 0%, #1e2442 50%, #1a1f35 100%); color: var(--text); }
+        [data-theme="dark"] .admin-page { color: var(--text); background: transparent; }
+        [data-theme="dark"] .quick-stat-card { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .quick-stat-num { color: var(--text); }
+        [data-theme="dark"] .quick-stat-label { color: var(--muted); }
+        [data-theme="dark"] .chart-card { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .chart-title { color: var(--text); }
+        [data-theme="dark"] .chart-title::after { background: linear-gradient(90deg, var(--border), transparent); }
+        [data-theme="dark"] .bar-label { color: var(--muted); }
+        [data-theme="dark"] .bar-value { color: var(--text); }
+        [data-theme="dark"] .bar-track { background: rgba(0,0,0,0.2); }
+        [data-theme="dark"] .kategori-list { color: var(--text); }
+        [data-theme="dark"] .kategori-item { border-color: var(--border); }
+        [data-theme="dark"] .kategori-name { color: var(--text); }
+        [data-theme="dark"] .kategori-bar { background: rgba(0,0,0,0.2); }
+        [data-theme="dark"] .kategori-count { color: var(--text); }
+        [data-theme="dark"] .recent-list { color: var(--text); }
+        [data-theme="dark"] .recent-item { background: rgba(0,0,0,0.2); border-color: var(--border); }
+        [data-theme="dark"] .recent-item:hover { background: rgba(100,181,246,0.1); border-color: var(--accent); }
+        [data-theme="dark"] .recent-ticket { color: var(--accent); }
+        [data-theme="dark"] .recent-title { color: var(--text); }
+        [data-theme="dark"] .recent-category { background: var(--card); color: var(--muted); }
+        [data-theme="dark"] .recent-time { color: var(--muted); }
+        [data-theme="dark"] .performance-grid { color: var(--text); }
+        [data-theme="dark"] .performance-stat { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .performance-value { color: var(--text); }
+        [data-theme="dark"] .performance-label { color: var(--muted); }
+        [data-theme="dark"] .performance-bar { background: rgba(0,0,0,0.2); }
+        [data-theme="dark"] .stat-box { background: var(--card); border-color: var(--border); color: var(--text); }
+        [data-theme="dark"] .stat-box .lbl { color: var(--muted); }
         [data-theme="dark"] .toolbar { background: var(--card); }
         [data-theme="dark"] .search-input { background: var(--bg); color: var(--text); border-color: var(--border); }
-        [data-theme="dark"] .search-input:focus { background: var(--card); }
+        [data-theme="dark"] .search-input:focus { background: var(--card); border-color: var(--accent); }
         [data-theme="dark"] .filter-tab { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .filter-tab.active { background: var(--primary); color: white; }
         [data-theme="dark"] .toolbar-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .result-count { background: var(--card); color: var(--accent); }
         [data-theme="dark"] .table-card { background: var(--card); border-color: var(--border); }
-        [data-theme="dark"] th { background: var(--primary-light); color: var(--text); }
-        [data-theme="dark"] tbody tr:hover { background: var(--bg); }
+        [data-theme="dark"] th { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] td { color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] tbody tr:hover { background: rgba(0,0,0,0.2); }
         [data-theme="dark"] .status-select { background: var(--card); color: var(--text); border-color: var(--border); }
         [data-theme="dark"] .page-btn { background: var(--card); color: var(--text); border-color: var(--border); }
-        [data-theme="dark"] .modal-box { background: var(--card); }
-        [data-theme="dark"] .confirm-box { background: var(--card); }
-        [data-theme="dark"] .detail-item { background: var(--bg); }
-        [data-theme="dark"] .detail-desc { background: var(--bg); }
+        [data-theme="dark"] .modal-box { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .confirm-box { background: var(--card); color: var(--text); }
+        [data-theme="dark"] .detail-item { background: rgba(0,0,0,0.2); color: var(--text); }
+        [data-theme="dark"] .detail-desc { background: rgba(0,0,0,0.2); color: var(--text); }
         [data-theme="dark"] .detail-actions .btn-delete { background: #3D1520; }
         [data-theme="dark"] .action-btn.view { background: #1A2744; }
         [data-theme="dark"] .action-btn.delete { background: #3D1520; }
-        [data-theme="dark"] .pagination { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .pagination { background: var(--card); border-color: var(--border); color: var(--text); }
         [data-theme="dark"] .page-input { background: var(--card); color: var(--text); border-color: var(--border); }
+        [data-theme="dark"] .empty-state { color: var(--muted); }
+        [data-theme="dark"] .empty-state-icon { opacity: 0.5; }
       `}</style>
 
-      <div className="admin-container">
-        {/* Header */}
-        <header className="admin-header">
-          <div className="admin-header-top">
-            <Link href="/lapor_mulia" className="admin-brand">
-              <div className="admin-brand-icon">⚑</div>
-              <div>
-                <h1>Mulia Lapor — Admin</h1>
-                <small>Universitas Mulia</small>
-              </div>
-            </Link>
-            <div className="admin-actions">
-              <span className="admin-badge">👤 Admin</span>
-              <button className="admin-btn outline" type="button" onClick={adminLogout}>Logout</button>
+      <div className="admin-page">
+        {/* Quick Stats */}
+        <div className="quick-stats-row">
+          <div className="quick-stat-card">
+            <div className="quick-stat-icon" style={{background: 'linear-gradient(135deg, #1E88E5, #1565C0)'}}>📋</div>
+            <div className="quick-stat-info">
+              <div className="quick-stat-num">{stats.total}</div>
+              <div className="quick-stat-label">Total Laporan</div>
             </div>
           </div>
-        </header>
+          <div className="quick-stat-card">
+            <div className="quick-stat-icon" style={{background: 'linear-gradient(135deg, #FF9800, #F57C00)'}}>📅</div>
+            <div className="quick-stat-info">
+              <div className="quick-stat-num">{todayReports}</div>
+              <div className="quick-stat-label">Hari Ini</div>
+            </div>
+          </div>
+          <div className="quick-stat-card">
+            <div className="quick-stat-icon" style={{background: 'linear-gradient(135deg, #E53935, #C62828)'}}>🚨</div>
+            <div className="quick-stat-info">
+              <div className="quick-stat-num">{urgentReports}</div>
+              <div className="quick-stat-label">Urgent</div>
+            </div>
+          </div>
+          <div className="quick-stat-card">
+            <div className="quick-stat-icon" style={{background: 'linear-gradient(135deg, #9C27B0, #7B1FA2)'}}>⏳</div>
+            <div className="quick-stat-info">
+              <div className="quick-stat-num">{unprocessedReports}</div>
+              <div className="quick-stat-label">Belum Diproses</div>
+            </div>
+          </div>
+        </div>
 
-        {/* Stats */}
+        {/* Charts Row */}
+        <div className="charts-row">
+          {/* Chart Status */}
+          <div className="chart-card">
+            <h3 className="chart-title">📊 Distribusi Status</h3>
+            <div className="bar-chart">
+              <div className="bar-row">
+                <span className="bar-label">Terkirim</span>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{width: `${stats.total > 0 ? (stats.terkirim / stats.total) * 100 : 0}%`, background: '#1E88E5'}} />
+                </div>
+                <span className="bar-value">{stats.terkirim}</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Diproses</span>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{width: `${stats.total > 0 ? (stats.diproses / stats.total) * 100 : 0}%`, background: '#FF9800'}} />
+                </div>
+                <span className="bar-value">{stats.diproses}</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Selesai</span>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{width: `${stats.total > 0 ? (stats.selesai / stats.total) * 100 : 0}%`, background: '#4CAF50'}} />
+                </div>
+                <span className="bar-value">{stats.selesai}</span>
+              </div>
+              <div className="bar-row">
+                <span className="bar-label">Ditolak</span>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{width: `${stats.total > 0 ? (stats.ditolak / stats.total) * 100 : 0}%`, background: '#E53935'}} />
+                </div>
+                <span className="bar-value">{stats.ditolak}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Kategori */}
+          <div className="chart-card">
+            <h3 className="chart-title">🏆 Top 5 Kategori</h3>
+            {categoryStats.length === 0 ? (
+              <div className="empty-chart">Belum ada data</div>
+            ) : (
+              <div className="kategori-list">
+                {categoryStats.map(([category, count], idx) => (
+                  <div key={category} className="kategori-item">
+                    <span className="kategori-rank">#{idx + 1}</span>
+                    <span className="kategori-icon">{categoryIcons[category] || '📋'}</span>
+                    <span className="kategori-name">{category}</span>
+                    <div className="kategori-bar">
+                      <div className="kategori-fill" style={{width: `${(count / maxCategoryCount) * 100}%`, background: categoryColors[category] || '#667eea'}} />
+                    </div>
+                    <span className="kategori-count">{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Row */}
+        <div className="charts-row">
+          {/* Laporan Terbaru */}
+          <div className="chart-card">
+            <h3 className="chart-title">🆕 Laporan Terbaru (Perlu Ditindak)</h3>
+            {recentUrgent.length === 0 ? (
+              <div className="empty-chart">Tidak ada laporan baru</div>
+            ) : (
+              <div className="recent-list">
+                {recentUrgent.map((report) => (
+                  <div key={report.ticket} className="recent-item" onClick={() => setSelectedReport(report)}>
+                    <span className="recent-status" style={{background: '#E3F2FD', color: '#1976D2'}}>📨</span>
+                    <div className="recent-info">
+                      <div className="recent-ticket">{report.ticket}</div>
+                      <div className="recent-title">{report.title}</div>
+                    </div>
+                    <div className="recent-meta">
+                      <span className="recent-category">{report.category}</span>
+                      <span className="recent-time">{report.createdAt.split(',')[0]}</span>
+                    </div>
+                    {(report.priority === 'Darurat' || report.priority === 'Tinggi') && (
+                      <span className="recent-urgent" style={{background: report.priority === 'Darurat' ? '#E53935' : '#FF9800'}}>
+                        {report.priority}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Ringkasan Performa */}
+          <div className="chart-card">
+            <h3 className="chart-title">📈 Ringkasan Performa</h3>
+            <div className="performance-grid">
+              <div className="performance-stat">
+                <div className="performance-value" style={{color: 'var(--success)'}}>{performanceStats.completionRate}%</div>
+                <div className="performance-label">Tingkat Penyelesaian</div>
+                <div className="performance-bar">
+                  <div className="performance-fill" style={{width: `${performanceStats.completionRate}%`, background: 'var(--success)'}} />
+                </div>
+              </div>
+              <div className="performance-stat">
+                <div className="performance-value" style={{color: 'var(--primary)'}}>{stats.selesai}</div>
+                <div className="performance-label">Total Selesai</div>
+              </div>
+              <div className="performance-stat">
+                <div className="performance-value" style={{color: 'var(--warning)'}}>{stats.diproses}</div>
+                <div className="performance-label">Sedang Diproses</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Summary */}
         <div className="stats-row">
           <div className={`stat-box ${filterStatus === 'Semua' ? 'active' : ''}`} onClick={() => setFilterStatus('Semua')}>
             <div className="num" style={{color: 'var(--primary)'}}>{stats.total}</div>

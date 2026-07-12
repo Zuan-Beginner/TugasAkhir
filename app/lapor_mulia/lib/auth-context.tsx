@@ -54,6 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      // Reset theme to light mode on logout
+      localStorage.setItem('muliaTheme', 'light');
+      document.documentElement.setAttribute('data-theme', 'light');
     }
   };
 

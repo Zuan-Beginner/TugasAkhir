@@ -30,13 +30,13 @@
 
 /* ===== DARK MODE CSS VARIABLES ===== */
 [data-theme='dark'] {
-  --bg: #0f1535;
-  --card: #1a2141;
-  --text: #E5E7EB;
-  --muted: #9CA3AF;
-  --border: #2D3748;
-  --primary-light: rgba(253, 242, 244, 0.15);
-  --accent-light: rgba(30, 136, 229, 0.15);
+  --bg: #1a1f35;
+  --card: #252b45;
+  --text: #e8eaf6;
+  --muted: #9fa8c2;
+  --border: #3d4566;
+  --primary-light: rgba(255,255,255,0.08);
+  --accent-light: rgba(100,181,246,0.12);
 }
 
 /* ===== TYPOGRAPHY SCALE ===== */
@@ -3313,22 +3313,23 @@ input, select, textarea {
 }
 
 [data-theme="dark"] {
-  --primary-light: #2A1419;
-  --accent: #4FA3F0;
-  --accent-light: #15263A;
-  --bg: #0F1115;
-  --card: #1A1D24;
-  --text: #ECEDEE;
-  --muted: #9BA1A6;
-  --border: #2A2E37;
-  --shadow: 0 2px 8px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.55);
-  --shadow-xl: 0 12px 40px rgba(0,0,0,0.6);
+  --primary-light: rgba(255,255,255,0.08);
+  --accent: #64b5f6;
+  --accent-light: rgba(100,181,246,0.12);
+  --bg: #1a1f35;
+  --card: #252b45;
+  --text: #e8eaf6;
+  --muted: #9fa8c2;
+  --border: #3d4566;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,0.5);
 }
 
 [data-theme="dark"] body {
-  background: linear-gradient(180deg, #0F1115 0%, #14161C 50%, #0B0D11 100%);
+  background: linear-gradient(180deg, #1a1f35 0%, #1e2442 50%, #1a1f35 100%);
+  color: var(--text);
 }
 
 /* Ambient overlays — dim them so they don't glow on dark */
