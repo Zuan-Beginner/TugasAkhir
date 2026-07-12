@@ -48,6 +48,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, logout } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     setReports(getReports());
