@@ -2,28 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-
-type ReportStatus = 'Terkirim' | 'Diproses' | 'Selesai' | 'Ditolak';
-
-type Report = {
-  ticket: string;
-  category: string;
-  priority: string;
-  location: string;
-  title: string;
-  description: string;
-  name: string;
-  contact: string;
-  status: ReportStatus;
-  createdAt: string;
-};
+import { STORAGE_KEY, statuses } from '../lib/constants';
+import type { Report, ReportStatus } from '../lib/types';
+import { getForumMessages, saveForumMessages } from '../lib/storage';
 
 type FilterStatus = 'Semua' | ReportStatus;
 
-const STORAGE_KEY = 'muliaLaporReportsFull';
 const ADMIN_KEY = 'muliaAdminSession';
-const statuses: ReportStatus[] = ['Terkirim', 'Diproses', 'Selesai', 'Ditolak'];
-const filterStatuses: FilterStatus[] = ['Semua', 'Terkirim', 'Diproses', 'Selesai', 'Ditolak'];
+const filterStatuses: FilterStatus[] = ['Semua', ...statuses];
 
 const priorityColors: Record<string, string> = {
   'Rendah': '#4CAF50',
@@ -138,6 +124,10 @@ export default function AdminPage() {
     if (selectedRows.size === 0) return;
     if (!confirm(`Hapus ${selectedRows.size} laporan yang dipilih?`)) return;
     saveReports(reports.filter(r => !selectedRows.has(r.ticket)));
+    // Hapus juga dari forum
+    const forumMessages = getForumMessages();
+    const updatedForum = forumMessages.filter(m => !m.reportId || !selectedRows.has(m.reportId));
+    saveForumMessages(updatedForum);
     setSelectedRows(new Set());
   }
 
@@ -419,6 +409,10 @@ export default function AdminPage() {
 
   function deleteReport(ticket: string) {
     saveReports(reports.filter((r) => r.ticket !== ticket));
+    // Hapus juga dari forum
+    const forumMessages = getForumMessages();
+    const updatedForum = forumMessages.filter(m => m.reportId !== ticket);
+    saveForumMessages(updatedForum);
     setShowDeleteConfirm(null);
     setSelectedReport(null);
   }

@@ -1012,6 +1012,42 @@ textarea {
   font-size: 24px;
 }
 
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--danger);
+  width: 100%;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(229, 57, 53, 0.1);
+  transform: translateX(4px);
+}
+
+.sidebar-logout-btn .nav-icon {
+  font-size: 20px;
+  min-width: 20px;
+}
+
+.sidebar-logout-btn .nav-label {
+  font-size: 14px;
+}
+
 .app-container {
   flex: 1;
   margin-left: 292px;
@@ -1066,6 +1102,19 @@ textarea {
     top: 6px;
     width: 24px;
     height: 3px;
+  }
+
+  .sidebar-footer {
+    padding-top: 12px;
+  }
+
+  .sidebar-logout-btn {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+
+  .sidebar-logout-btn .nav-label {
+    display: none;
   }
 
   .app-container {
