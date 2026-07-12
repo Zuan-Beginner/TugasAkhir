@@ -1,5 +1,5 @@
 import { STORAGE_KEY, ANNOUNCEMENT_KEY, BILLING_KEY, DRAFT_KEY, defaultAnnouncements, defaultBilling } from './constants';
-import type { Announcement, BillingItem, Report, ReportFormState } from './types';
+import type { Announcement, BillingItem, ForumMessage, Report, ReportFormState } from './types';
 
 export function createTicketNumber() {
   const random = Math.floor(1000 + Math.random() * 9000);
@@ -64,4 +64,56 @@ export function saveDraft(form: ReportFormState) {
 export function clearDraft() {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(DRAFT_KEY);
+}
+
+// Forum functions
+const FORUM_KEY = 'muliaForumMessages';
+
+export function getForumMessages(): ForumMessage[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = window.localStorage.getItem(FORUM_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveForumMessages(messages: ForumMessage[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(FORUM_KEY, JSON.stringify(messages));
+}
+
+export function createForumPostFromReport(report: Report, avatar?: string): ForumMessage {
+  return {
+    id: `report-${report.ticket}`,
+    author: report.name,
+    avatar: avatar || '👤',
+    message: report.description,
+    timestamp: report.createdAt,
+    likes: 0,
+    likedBy: [],
+    replies: [],
+    isReport: true,
+    reportId: report.ticket,
+    reportCategory: report.category,
+    reportPriority: report.priority,
+    reportStatus: report.status,
+    reportLocation: report.location,
+  };
+}
+
+export function syncReportsToForum(reports: Report[]) {
+  const forumMessages = getForumMessages();
+  const existingReportIds = new Set(
+    forumMessages.filter(m => m.isReport && m.reportId).map(m => m.reportId)
+  );
+
+  const newForumPosts = reports
+    .filter(r => !existingReportIds.has(r.ticket))
+    .map(r => createForumPostFromReport(r));
+
+  if (newForumPosts.length > 0) {
+    saveForumMessages([...newForumPosts, ...forumMessages]);
+  }
 }

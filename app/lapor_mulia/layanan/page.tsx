@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { defaultContacts, defaultSchedule, defaultAnnouncements, defaultBilling } from '../lib/constants';
 import type { ModalType } from '../lib/types';
 
@@ -25,11 +25,7 @@ export default function LayananPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Semua');
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [isLoaded, setIsLoaded] = useState(true);
-
-  useEffect(() => {
-    
-  }, []);
+  const isLoaded = true;
 
   const filtered = useMemo(() => {
     return allServices.filter((s) => {

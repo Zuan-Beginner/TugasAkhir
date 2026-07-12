@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+
 import { getReports, saveReports } from '../lib/storage';
 import { getStatusColor, getStatusStep, statuses } from '../lib/constants';
 import { useAuth } from '../lib/auth-context';
@@ -12,7 +13,7 @@ export default function RiwayatPage() {
   const [ticketSearch, setTicketSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'Semua'>('Semua');
   const [showDetail, setShowDetail] = useState<Report | null>(null);
-  const [isLoaded, setIsLoaded] = useState(true);
+  const isLoaded = true;
 
   useEffect(() => {
     setReports(getReports());

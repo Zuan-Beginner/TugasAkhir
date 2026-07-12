@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getReports, saveReports, createTicketNumber, getDraft, saveDraft, clearDraft } from '../lib/storage';
+import { getReports, saveReports, createTicketNumber, getDraft, saveDraft, clearDraft, createForumPostFromReport, getForumMessages, saveForumMessages } from '../lib/storage';
 import { categories, priorities, initialForm } from '../lib/constants';
 import type { Report, ReportFormState } from '../lib/types';
 import { useAuth } from '../lib/auth-context';
@@ -23,7 +23,7 @@ export default function LaporPage() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(true);
+  const isLoaded = true;
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState('');
@@ -104,6 +104,12 @@ export default function LaporPage() {
     const all = getReports();
     const next = [report, ...all];
     saveReports(next);
+
+    // Auto-sync ke forum
+    const forumMessage = createForumPostFromReport(report, user?.avatar);
+    const forumMessages = getForumMessages();
+    saveForumMessages([forumMessage, ...forumMessages]);
+
     clearDraft();
     setDraftSaved(false);
     setDraftRestored(false);

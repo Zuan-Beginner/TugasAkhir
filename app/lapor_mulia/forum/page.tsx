@@ -1,75 +1,65 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import Link from 'next/link';
 import { useAuth } from '../lib/auth-context';
-
-type Reply = {
-  id: string;
-  author: string;
-  avatar: string;
-  message: string;
-  timestamp: string;
-  likes: number;
-  likedBy: string[];
-};
-
-type Message = {
-  id: string;
-  author: string;
-  avatar: string;
-  message: string;
-  timestamp: string;
-  likes: number;
-  likedBy: string[];
-  replies: Reply[];
-  isPinned?: boolean;
-  starredBy?: string[];
-};
+import { getForumMessages, saveForumMessages, getReports, syncReportsToForum } from '../lib/storage';
+import type { ForumMessage, ForumReply } from '../lib/types';
+import { categories } from '../lib/constants';
 
 const STORAGE_KEY = 'muliaForumMessages';
-const USER_KEY = 'muliaForumUser';
-const ADMIN_KEY = 'muliaAdminSession';
-const ADMIN_USERS = ['admin', 'administrator', 'Admin'];
 
-const avatarEmojis = ['👨', '👩', '🧑', '👨‍🎓', '👩‍🎓', '👨‍💼', '👩‍💼', '🧑‍💼', '👨‍🏫', '👩‍🏫'];
-
-function getMessages(): Message[] {
+function getMessages(): ForumMessage[] {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem(STORAGE_KEY);
   return data ? JSON.parse(data) : [];
 }
 
-function saveMessages(messages: Message[]) {
+function saveMessages(messages: ForumMessage[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
 }
 
-function getUser() {
-  if (typeof window === 'undefined') return null;
-  const data = localStorage.getItem(USER_KEY);
-  return data ? JSON.parse(data) : null;
+function getCategoryIcon(category?: string): string {
+  const cat = categories.find(c => c.name === category);
+  return cat?.icon || '📋';
 }
 
-function saveUser(user: { name: string; avatar: string }) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+function getCategoryColor(category?: string): string {
+  const cat = categories.find(c => c.name === category);
+  return cat?.color || '#667eea';
+}
+
+function getStatusColor(status?: string): string {
+  switch (status) {
+    case 'Diproses': return '#FF9800';
+    case 'Selesai': return '#4CAF50';
+    case 'Ditolak': return '#E53935';
+    default: return '#1E88E5';
+  }
+}
+
+function getPriorityColor(priority?: string): string {
+  switch (priority) {
+    case 'Darurat': return '#9C27B0';
+    case 'Tinggi': return '#F44336';
+    case 'Sedang': return '#FF9800';
+    default: return '#4CAF50';
+  }
 }
 
 export default function ForumPage() {
   const { user: authUser, isAdmin } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ForumMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
-  const [isLoaded, setIsLoaded] = useState(true);
-  const [filterMode, setFilterMode] = useState<'all' | 'mine' | 'starred' | 'pinned'>('all');
+  const [replyTo, setReplyTo] = useState<ForumMessage | null>(null);
+  const [filterMode, setFilterMode] = useState<'all' | 'reports' | 'mine' | 'starred' | 'pinned'>('all');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isLoaded = true;
 
-  // Convert authUser to forum user format
   const user = authUser ? { name: authUser.name, avatar: authUser.avatar } : null;
 
   useEffect(() => {
     loadMessages();
-    
 
     // Poll for new messages every 3 seconds
     const interval = setInterval(() => {
@@ -87,6 +77,9 @@ export default function ForumPage() {
   }, []);
 
   function loadMessages() {
+    // Backward compatibility: sync existing reports to forum
+    const reports = getReports();
+    syncReportsToForum(reports);
     setMessages(getMessages());
   }
 
@@ -94,14 +87,11 @@ export default function ForumPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
 
-
-
   function handleSendMessage() {
     if (!newMessage.trim() || !user) return;
     
     if (replyTo) {
-      // If replying, add to the parent message's replies array
-      const reply: Reply = {
+      const reply: ForumReply = {
         id: Date.now().toString(),
         author: user.name,
         avatar: user.avatar,
@@ -120,8 +110,7 @@ export default function ForumPage() {
       saveMessages(updated);
       setMessages(updated);
     } else {
-      // If not replying, create a new message
-      const message: Message = {
+      const message: ForumMessage = {
         id: Date.now().toString(),
         author: user.name,
         avatar: user.avatar,
@@ -146,7 +135,6 @@ export default function ForumPage() {
     if (!user) return;
     const updated = messages.map(m => {
       if (replyId && m.id === messageId) {
-        // Like a reply
         return {
           ...m,
           replies: m.replies.map(r => {
@@ -164,7 +152,6 @@ export default function ForumPage() {
           })
         };
       } else if (m.id === messageId) {
-        // Like a main message
         const hasLiked = m.likedBy.includes(user.name);
         return {
           ...m,
@@ -181,9 +168,16 @@ export default function ForumPage() {
   }
 
   function handleDeleteMessage(messageId: string, replyId?: string) {
+    const msg = messages.find(m => m.id === messageId);
+    
+    // Jika ini post laporan, hanya admin yang bisa hapus
+    if (msg?.isReport && !isAdmin()) {
+      return;
+    }
+
     if (!confirm('Hapus pesan ini?')) return;
+    
     if (replyId) {
-      // Delete a reply
       const updated = messages.map(m => {
         if (m.id === messageId) {
           return {
@@ -196,14 +190,11 @@ export default function ForumPage() {
       saveMessages(updated);
       setMessages(updated);
     } else {
-      // Delete a main message
       const updated = messages.filter(m => m.id !== messageId);
       saveMessages(updated);
       setMessages(updated);
     }
   }
-
-
 
   function handlePinMessage(messageId: string) {
     if (!isAdmin()) return;
@@ -245,7 +236,9 @@ export default function ForumPage() {
   const filteredMessages = (() => {
     let result = messages;
     
-    if (filterMode === 'mine') {
+    if (filterMode === 'reports') {
+      result = result.filter(m => m.isReport);
+    } else if (filterMode === 'mine') {
       result = result.filter(m => m.author === user?.name);
     } else if (filterMode === 'starred') {
       result = result.filter(m => m.starredBy?.includes(user?.name || ''));
@@ -261,10 +254,8 @@ export default function ForumPage() {
     });
   })();
 
-  const getReplyMessage = (replyToId?: string) => {
-    if (!replyToId) return null;
-    return messages.find(m => m.id === replyToId);
-  };
+  const reportCount = messages.filter(m => m.isReport).length;
+  const messageCount = messages.filter(m => !m.isReport).length;
 
   return (
     <>
@@ -321,6 +312,7 @@ export default function ForumPage() {
           gap: 12px;
           margin-bottom: 20px;
           align-items: center;
+          flex-wrap: wrap;
         }
         .filter-btn {
           padding: 10px 20px;
@@ -466,6 +458,154 @@ export default function ForumPage() {
           color: var(--danger);
         }
 
+        /* Report Card Styles */
+        .report-forum-card {
+          padding: 20px;
+          border-radius: 16px;
+          background: var(--card);
+          margin-bottom: 16px;
+          transition: all 0.3s;
+          border: 2px solid var(--border);
+          border-left: 5px solid var(--primary);
+          position: relative;
+        }
+        .report-forum-card:hover {
+          transform: translateX(4px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .report-forum-card.pinned {
+          border-color: #fbbf24;
+          border-left-color: #f59e0b;
+        }
+        .report-badge-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+        }
+        .report-category-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .report-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .report-priority-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .report-title {
+          font-size: 16px;
+          font-weight: 800;
+          margin-bottom: 8px;
+          color: var(--text);
+        }
+        .report-description {
+          font-size: 13px;
+          line-height: 1.6;
+          color: var(--muted);
+          margin-bottom: 12px;
+        }
+        .report-location {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: var(--muted);
+          margin-bottom: 12px;
+        }
+        .report-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+        }
+        .report-ticket {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 8px;
+          background: var(--primary-light);
+          color: var(--primary);
+        }
+        .report-author {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .report-author-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          display: grid;
+          place-items: center;
+          font-size: 16px;
+        }
+        .report-author-name {
+          font-size: 13px;
+          font-weight: 700;
+        }
+        .report-author-time {
+          font-size: 11px;
+          color: var(--muted);
+        }
+        .pinned-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+          color: white;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 700;
+          margin-left: 8px;
+        }
+        .star-btn {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: var(--card);
+          border: 2px solid var(--border);
+          border-radius: 50%;
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          transition: all 0.3s;
+          font-size: 16px;
+          color: var(--text);
+        }
+        .star-btn:hover {
+          transform: scale(1.15) rotate(15deg);
+          border-color: #fbbf24;
+        }
+        .star-btn.starred {
+          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+          border-color: #f59e0b;
+        }
+
         .compose-box {
           background: var(--card);
           border-radius: 20px;
@@ -543,99 +683,6 @@ export default function ForumPage() {
           cursor: not-allowed;
         }
 
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 20px;
-        }
-        .modal-box {
-          background: var(--card);
-          border-radius: 24px;
-          padding: 32px;
-          max-width: 400px;
-          width: 100%;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-          color: var(--text);
-        }
-        .modal-title {
-          font-size: 24px;
-          font-weight: 800;
-          margin-bottom: 8px;
-        }
-        .modal-subtitle {
-          font-size: 14px;
-          color: var(--muted);
-          margin-bottom: 24px;
-        }
-        .modal-input {
-          width: 100%;
-          padding: 12px 16px;
-          border: 2px solid var(--border);
-          background: var(--bg);
-          color: var(--text);
-          border-radius: 12px;
-          font-size: 14px;
-          outline: none;
-          margin-bottom: 16px;
-        }
-        .modal-input:focus {
-          border-color: var(--primary);
-          color: var(--text);
-        }
-        .modal-input::placeholder {
-          color: var(--muted);
-        }
-        .avatar-grid {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 8px;
-          margin-bottom: 24px;
-        }
-        .avatar-option {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          border: 3px solid var(--border);
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          display: grid;
-          place-items: center;
-          font-size: 24px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .avatar-option:hover {
-          transform: scale(1.1);
-        }
-        .avatar-option.selected {
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(123, 16, 35, 0.2);
-        }
-        .modal-btn {
-          width: 100%;
-          padding: 14px;
-          border: none;
-          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-          color: white;
-          border-radius: 12px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        .modal-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(123, 16, 35, 0.3);
-        }
-        .modal-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
         .empty-state {
           text-align: center;
           padding: 60px 20px;
@@ -676,42 +723,7 @@ export default function ForumPage() {
           background: #fee;
           color: var(--danger);
         }
-        .pinned-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 4px 10px;
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          color: white;
-          border-radius: 12px;
-          font-size: 11px;
-          font-weight: 700;
-          margin-left: 8px;
-        }
-        .star-btn {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          background: var(--card);
-          border: 2px solid var(--border);
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-          cursor: pointer;
-          transition: all 0.3s;
-          font-size: 16px;
-          color: var(--text);
-        }
-        .star-btn:hover {
-          transform: scale(1.15) rotate(15deg);
-          border-color: #fbbf24;
-        }
-        .star-btn.starred {
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          border-color: #f59e0b;
-        }
+
         /* Dark mode overrides */
         [data-theme="dark"] .forum-container { color: var(--text); }
         [data-theme="dark"] .forum-banner { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
@@ -724,6 +736,7 @@ export default function ForumPage() {
         [data-theme="dark"] .reply-input::placeholder, [data-theme="dark"] .message-input::placeholder { color: var(--muted); }
         [data-theme="dark"] .modal-content { background: var(--card); }
         [data-theme="dark"] .context-menu { background: var(--card); border-color: var(--border); }
+        [data-theme="dark"] .report-forum-card { background: var(--card); border-color: var(--border); }
       `}</style>
 
       <div className="forum-container">
@@ -734,7 +747,11 @@ export default function ForumPage() {
             <p style={{fontSize: 14, opacity: 0.9}}>Ruang komunikasi mahasiswa dan civitas Universitas Mulia</p>
             <div className="forum-stats">
               <div className="forum-stat">
-                <strong>{messages.length}</strong>
+                <strong>{reportCount}</strong>
+                <span>Laporan</span>
+              </div>
+              <div className="forum-stat">
+                <strong>{messageCount}</strong>
                 <span>Pesan</span>
               </div>
               <div className="forum-stat">
@@ -751,7 +768,13 @@ export default function ForumPage() {
             className={`filter-btn ${filterMode === 'all' ? 'active' : ''}`}
             onClick={() => setFilterMode('all')}
           >
-            📋 Semua Pesan
+            📋 Semua
+          </button>
+          <button 
+            className={`filter-btn ${filterMode === 'reports' ? 'active' : ''}`}
+            onClick={() => setFilterMode('reports')}
+          >
+            📢 Laporan ({reportCount})
           </button>
           <button 
             className={`filter-btn ${filterMode === 'mine' ? 'active' : ''}`}
@@ -787,14 +810,177 @@ export default function ForumPage() {
             <div className="empty-state">
               <div className="empty-icon">💬</div>
               <h3 style={{fontSize: 18, fontWeight: 700, marginBottom: 8}}>
-                {filterMode === 'mine' ? 'Belum Ada Pesan Anda' : 'Belum Ada Diskusi'}
+                {filterMode === 'mine' ? 'Belum Ada Pesan Anda' : filterMode === 'reports' ? 'Belum Ada Laporan' : 'Belum Ada Diskusi'}
               </h3>
-              <p style={{fontSize: 14}}>Mulai percakapan dengan mengirim pesan pertama!</p>
+              <p style={{fontSize: 14}}>
+                {filterMode === 'reports' 
+                  ? 'Laporan yang dibuat akan otomatis muncul di sini'
+                  : 'Mulai percakapan dengan mengirim pesan pertama!'}
+              </p>
             </div>
           ) : (
             filteredMessages.map((msg, idx) => {
               const isMine = msg.author === user?.name;
               const isStarred = msg.starredBy?.includes(user?.name || '');
+
+              // Render Report Card
+              if (msg.isReport) {
+                return (
+                  <div 
+                    key={msg.id} 
+                    className={`report-forum-card ${msg.isPinned ? 'pinned' : ''} ${isMine ? 'mine' : ''}`}
+                    style={{animationDelay: `${idx * 0.05}s`}}
+                    onContextMenu={(e) => handleContextMenu(e, msg.id)}
+                  >
+                    {/* Star Button */}
+                    <button 
+                      className={`star-btn ${isStarred ? 'starred' : ''}`}
+                      onClick={() => handleStarMessage(msg.id)}
+                      title={isStarred ? 'Hapus Bintang' : 'Beri Bintang'}
+                    >
+                      {isStarred ? '⭐' : '☆'}
+                    </button>
+
+                    {/* Report Badge Row */}
+                    <div className="report-badge-row">
+                      <span 
+                        className="report-category-badge"
+                        style={{
+                          background: getCategoryColor(msg.reportCategory) + '20',
+                          color: getCategoryColor(msg.reportCategory)
+                        }}
+                      >
+                        {getCategoryIcon(msg.reportCategory)} {msg.reportCategory}
+                      </span>
+                      <span 
+                        className="report-status-badge"
+                        style={{
+                          background: getStatusColor(msg.reportStatus) + '20',
+                          color: getStatusColor(msg.reportStatus)
+                        }}
+                      >
+                        {msg.reportStatus}
+                      </span>
+                      {msg.reportPriority && (
+                        <span 
+                          className="report-priority-badge"
+                          style={{
+                            background: getPriorityColor(msg.reportPriority) + '20',
+                            color: getPriorityColor(msg.reportPriority)
+                          }}
+                        >
+                          {msg.reportPriority}
+                        </span>
+                      )}
+                      {msg.isPinned && (
+                        <span className="pinned-badge">📌 Dipasang</span>
+                      )}
+                    </div>
+
+                    {/* Report Title */}
+                    <div className="report-title">{msg.message.split('\n')[0]}</div>
+
+                    {/* Report Description */}
+                    {msg.message.split('\n').slice(1).join('\n') && (
+                      <div className="report-description">
+                        {msg.message.split('\n').slice(1).join('\n')}
+                      </div>
+                    )}
+
+                    {/* Report Location */}
+                    {msg.reportLocation && (
+                      <div className="report-location">
+                        📍 {msg.reportLocation}
+                      </div>
+                    )}
+
+                    {/* Report Meta */}
+                    <div className="report-meta-row">
+                      <span className="report-ticket">{msg.reportId}</span>
+                    </div>
+
+                    {/* Author */}
+                    <div className="report-author">
+                      <div className="report-author-avatar">{msg.avatar}</div>
+                      <div>
+                        <div className="report-author-name">{msg.author}</div>
+                        <div className="report-author-time">{msg.timestamp}</div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="message-actions">
+                      <button 
+                        className={`message-action-btn like ${msg.likedBy.includes(user?.name || '') ? 'liked' : ''}`}
+                        onClick={() => handleLike(msg.id)}
+                      >
+                        ❤️ {msg.likes > 0 && msg.likes}
+                      </button>
+                      <button className="message-action-btn reply" onClick={() => setReplyTo(msg)}>
+                        💬 Balas ({msg.replies.length})
+                      </button>
+                      {isAdmin() && (
+                        <button className="message-action-btn delete" onClick={() => handleDeleteMessage(msg.id)}>
+                          🗑️ Hapus
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Replies Section */}
+                    {msg.replies && msg.replies.length > 0 && (
+                      <div style={{
+                        marginTop: '16px',
+                        paddingLeft: '20px',
+                        borderLeft: '3px solid var(--primary)',
+                        marginLeft: '20px'
+                      }}>
+                        {msg.replies.map((reply) => {
+                          const isReplyMine = reply.author === user?.name;
+                          return (
+                            <div key={reply.id} style={{
+                              background: isReplyMine ? 'rgba(123, 16, 35, 0.05)' : 'rgba(0,0,0,0.02)',
+                              padding: '12px',
+                              borderRadius: '12px',
+                              marginBottom: '8px'
+                            }}>
+                              <div className="message-header" style={{marginBottom: '8px'}}>
+                                <div className="message-author">
+                                  <div className="message-avatar" style={{width: '28px', height: '28px', fontSize: '16px'}}>{reply.avatar}</div>
+                                  <div>
+                                    <div className="message-author-name" style={{fontSize: '13px'}}>{reply.author}</div>
+                                    <div className="message-time" style={{fontSize: '10px'}}>{reply.timestamp}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="message-text" style={{fontSize: '13px', marginBottom: '8px'}}>{reply.message}</div>
+                              <div className="message-actions">
+                                <button 
+                                  className={`message-action-btn like ${reply.likedBy.includes(user?.name || '') ? 'liked' : ''}`}
+                                  onClick={() => handleLike(msg.id, reply.id)}
+                                  style={{fontSize: '11px', padding: '4px 8px'}}
+                                >
+                                  ❤️ {reply.likes > 0 && reply.likes}
+                                </button>
+                                {(isReplyMine || isAdmin()) && (
+                                  <button 
+                                    className="message-action-btn delete" 
+                                    onClick={() => handleDeleteMessage(msg.id, reply.id)}
+                                    style={{fontSize: '11px', padding: '4px 8px'}}
+                                  >
+                                    🗑️ Hapus
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Render Regular Message
               return (
                 <div 
                   key={msg.id} 
@@ -837,7 +1023,7 @@ export default function ForumPage() {
                       ❤️ {msg.likes > 0 && msg.likes}
                     </button>
                     <button className="message-action-btn reply" onClick={() => setReplyTo(msg)}>
-                      💬 Balas
+                      💬 Balas ({msg.replies.length})
                     </button>
                     {isMine && (
                       <button className="message-action-btn delete" onClick={() => handleDeleteMessage(msg.id)}>
@@ -854,7 +1040,7 @@ export default function ForumPage() {
                       borderLeft: '3px solid var(--primary)',
                       marginLeft: '20px'
                     }}>
-                      {msg.replies.map((reply, rIdx) => {
+                      {msg.replies.map((reply) => {
                         const isReplyMine = reply.author === user?.name;
                         return (
                           <div key={reply.id} style={{
@@ -911,7 +1097,6 @@ export default function ForumPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {isAdmin() ? (
-              // Admin menu: pin & star
               <>
                 <div 
                   className="context-menu-item"
@@ -933,7 +1118,6 @@ export default function ForumPage() {
                 </div>
               </>
             ) : (
-              // Regular user menu: star only
               <div 
                 className="context-menu-item"
                 onClick={() => {
@@ -948,12 +1132,11 @@ export default function ForumPage() {
           </div>
         )}
 
-
         {/* Compose Box */}
         <div className={`compose-box ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
           {replyTo && (
             <div className="reply-indicator">
-              <span>💬 Membalas <strong>{replyTo.author}</strong></span>
+              <span>💬 Membalas <strong>{replyTo.author}</strong>{replyTo.isReport ? ' (Laporan)' : ''}</span>
               <span className="reply-indicator-close" onClick={() => setReplyTo(null)}>✕</span>
             </div>
           )}
@@ -980,9 +1163,6 @@ export default function ForumPage() {
           </div>
         </div>
       </div>
-
-
     </>
   );
 }
-

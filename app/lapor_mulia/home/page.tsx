@@ -3,15 +3,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { getReports, getAnnouncements, getBilling } from '../lib/storage';
-import { heroImages, defaultSchedule, defaultContacts, getStatusColor, getStatusStep } from '../lib/constants';
-import type { Report, Announcement, BillingItem, ModalType, ReportStatus } from '../lib/types';
+import { heroImages, defaultSchedule, defaultContacts, getStatusColor } from '../lib/constants';
+import type { Report, Announcement, BillingItem, ModalType } from '../lib/types';
 import { StatGrid, Modal, ReportDetailModal } from '../components';
+import { useAuth } from '../lib/auth-context';
 
 export default function DashboardHome() {
+  const { user, isAdmin } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [billing, setBilling] = useState<BillingItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(true);
+  const isLoaded = true;
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [showReportDetail, setShowReportDetail] = useState<Report | null>(null);
@@ -20,7 +22,7 @@ export default function DashboardHome() {
     setReports(getReports());
     setAnnouncements(getAnnouncements());
     setBilling(getBilling());
-    
+
   }, []);
 
   useEffect(() => {
@@ -30,21 +32,20 @@ export default function DashboardHome() {
     return () => clearInterval(timer);
   }, []);
 
-  function prevSlide() {
-    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
-  }
-  function nextSlide() {
-    setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-  }
+  // Filter reports: user biasa hanya lihat laporannya sendiri, admin lihat semua
+  const userReports = useMemo(() => {
+    if (isAdmin()) return reports;
+    return reports.filter(r => r.name === user?.name);
+  }, [reports, user, isAdmin]);
 
   const dashboardCounts = useMemo(() => ({
-    all: reports.length,
-    sent: reports.filter((r) => r.status === 'Terkirim').length,
-    process: reports.filter((r) => r.status === 'Diproses').length,
-    done: reports.filter((r) => r.status === 'Selesai').length,
-  }), [reports]);
+    all: userReports.length,
+    sent: userReports.filter((r) => r.status === 'Terkirim').length,
+    process: userReports.filter((r) => r.status === 'Diproses').length,
+    done: userReports.filter((r) => r.status === 'Selesai').length,
+  }), [userReports]);
 
-  const recentReports = useMemo(() => reports.slice(0, 5), [reports]);
+  const recentReports = useMemo(() => userReports.slice(0, 5), [userReports]);
   const unpaidCount = useMemo(() => billing.filter((b) => b.status !== 'Lunas').length, [billing]);
 
   const services = [
@@ -195,20 +196,13 @@ export default function DashboardHome() {
           box-shadow: 0 12px 32px rgba(0,0,0,0.15);
         }
       `}</style>
-      {/* Hero Carousel */}
+      {/* Hero Banner - Pajangan Saja */}
       <div className={`hero-banner ${isLoaded ? 'anim-fade-up' : ''}`}>
         <div className="hero-slider" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
           {heroImages.map((src, i) => (
             <div key={i} className="hero-slide">
               <img src={src} alt={`Gedung Universitas Mulia Balikpapan ${i + 1}`} />
             </div>
-          ))}
-        </div>
-        <button className="hero-nav-btn left" type="button" onClick={prevSlide} aria-label="Sebelumnya">❮</button>
-        <button className="hero-nav-btn right" type="button" onClick={nextSlide} aria-label="Selanjutnya">❯</button>
-        <div className="hero-dots">
-          {heroImages.map((_, i) => (
-            <button key={i} className={`hero-dot ${i === currentSlide ? 'active' : ''}`} type="button" onClick={() => setCurrentSlide(i)} aria-label={`Slide ${i + 1}`} />
           ))}
         </div>
         <div className="hero-text">

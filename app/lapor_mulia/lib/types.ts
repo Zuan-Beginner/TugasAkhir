@@ -56,3 +56,33 @@ export type ContactItem = {
   role: string;
   icon: string;
 };
+
+export type ForumReply = {
+  id: string;
+  author: string;
+  avatar: string;
+  message: string;
+  timestamp: string;
+  likes: number;
+  likedBy: string[];
+};
+
+export type ForumMessage = {
+  id: string;
+  author: string;
+  avatar: string;
+  message: string;
+  timestamp: string;
+  likes: number;
+  likedBy: string[];
+  replies: ForumReply[];
+  isPinned?: boolean;
+  starredBy?: string[];
+  // Field untuk laporan
+  reportId?: string;
+  reportCategory?: string;
+  reportPriority?: string;
+  reportStatus?: string;
+  reportLocation?: string;
+  isReport?: boolean;
+};
