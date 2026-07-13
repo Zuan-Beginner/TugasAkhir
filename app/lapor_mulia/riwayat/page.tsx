@@ -2,26 +2,33 @@
 
 import { useMemo, useState, useEffect } from 'react';
 
-import { getReports, saveReports } from '../lib/storage';
+import { getReports, getReportsByUserId, saveReports } from '../lib/storage';
 import { getStatusColor, getStatusStep, statuses } from '../lib/constants';
 import { useAuth } from '../lib/auth-context';
 import type { Report, ReportStatus } from '../lib/types';
 
 export default function RiwayatPage() {
   const { user, isAdmin } = useAuth();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [allReports, setAllReports] = useState<Report[]>([]);
+  const [userReports, setUserReports] = useState<Report[]>([]);
   const [ticketSearch, setTicketSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'Semua'>('Semua');
   const [showDetail, setShowDetail] = useState<Report | null>(null);
   const isLoaded = true;
 
   useEffect(() => {
-    setReports(getReports());
-    
-  }, []);
+    const all = getReports();
+    setAllReports(all);
+    if (user?.userId) {
+      setUserReports(getReportsByUserId(user.userId));
+    } else {
+      setUserReports(all);
+    }
+  }, [user]);
 
   const filtered = useMemo(() => {
-    let result = reports;
+    const sourceReports = isAdmin() ? allReports : userReports;
+    let result = sourceReports;
     if (statusFilter !== 'Semua') {
       result = result.filter((r) => r.status === statusFilter);
     }
@@ -30,13 +37,19 @@ export default function RiwayatPage() {
       result = result.filter((r) => r.ticket.toUpperCase().includes(key) || r.title.toLowerCase().includes(ticketSearch.toLowerCase()));
     }
     return result;
-  }, [reports, statusFilter, ticketSearch]);
+  }, [allReports, userReports, statusFilter, ticketSearch, isAdmin]);
+
+  const displayReports = filtered;
+  const sourceReports = isAdmin() ? allReports : userReports;
 
   function deleteReport(ticket: string) {
     if (!window.confirm('Hapus laporan ini?')) return;
-    const next = reports.filter((r) => r.ticket !== ticket);
+    const next = allReports.filter((r) => r.ticket !== ticket);
     saveReports(next);
-    setReports(next);
+    setAllReports(next);
+    if (user?.userId) {
+      setUserReports(getReportsByUserId(user.userId));
+    }
     setShowDetail(null);
   }
 
@@ -163,15 +176,15 @@ export default function RiwayatPage() {
         <div className="layanan-banner-icon">📋</div>
         <div className="layanan-banner-content">
           <h1>Riwayat Laporan</h1>
-          <p>Lacak dan pantau status laporan Anda</p>
+          <p>{isAdmin() ? 'Kelola semua laporan sistem' : 'Lacak dan pantau status laporan Anda'}</p>
         </div>
         <div className="layanan-banner-stats">
           <div>
-            <strong>{reports.length}</strong>
-            <span>Total</span>
+            <strong>{sourceReports.length}</strong>
+            <span>{isAdmin() ? 'Total Sistem' : 'Total Anda'}</span>
           </div>
           <div>
-            <strong>{filtered.length}</strong>
+            <strong>{displayReports.length}</strong>
             <span>Ditampilkan</span>
           </div>
         </div>
@@ -197,7 +210,7 @@ export default function RiwayatPage() {
       <section className="section" style={{marginTop: 0}}>
         <div className="section-header" style={{marginBottom: 16}}>
           <h3 style={{fontSize: 16, fontWeight: 700, color: 'var(--text)'}}>📊 Filter Status</h3>
-          {filtered.length !== reports.length && (
+          {displayReports.length !== sourceReports.length && (
             <button 
               style={{
                 border: 'none',
@@ -232,7 +245,7 @@ export default function RiwayatPage() {
               'Selesai': '#10b981',
               'Ditolak': '#ef4444'
             };
-            const count = s === 'Semua' ? reports.length : reports.filter(r => r.status === s).length;
+            const count = s === 'Semua' ? sourceReports.length : sourceReports.filter(r => r.status === s).length;
             const isActive = statusFilter === s;
             return (
               <button 
@@ -280,8 +293,8 @@ export default function RiwayatPage() {
               borderRadius: '20px',
               fontSize: '12px',
               fontWeight: 700
-            }}>{filtered.length} laporan</span>
-            {reports.length > 0 && (
+            }}>{displayReports.length} laporan</span>
+            {sourceReports.length > 0 && (
               <button 
                 style={{
                   border: 'none',
@@ -323,15 +336,15 @@ export default function RiwayatPage() {
           }}>
             <div className="empty-state-icon" style={{fontSize: '64px', marginBottom: '16px'}}>📄</div>
             <h3 style={{fontSize: '20px', fontWeight: 800, marginBottom: '8px', color: 'var(--text)'}}>
-              {reports.length === 0 ? 'Belum Ada Laporan' : 'Tidak Ada Hasil'}
+              {sourceReports.length === 0 ? 'Belum Ada Laporan' : 'Tidak Ada Hasil'}
             </h3>
             <p style={{fontSize: '14px', color: 'var(--muted)', marginBottom: '24px'}}>
-              {reports.length === 0 ? 'Buat laporan pertama Anda sekarang' : 'Tidak ada laporan yang sesuai dengan filter'}
+              {sourceReports.length === 0 ? 'Buat laporan pertama Anda sekarang' : 'Tidak ada laporan yang sesuai dengan filter'}
             </p>
             <button 
               className="btn-primary" 
               onClick={() => { 
-                if (reports.length === 0) {
+                if (sourceReports.length === 0) {
                   window.location.href = '/lapor_mulia/lapor';
                 } else {
                   setTicketSearch(''); 
@@ -346,12 +359,12 @@ export default function RiwayatPage() {
                 boxShadow: '0 8px 20px rgba(123, 16, 35, 0.3)'
               }}
             >
-              {reports.length === 0 ? '📝 Buat Laporan Sekarang' : '🔄 Tampilkan Semua Laporan'}
+              {sourceReports.length === 0 ? '📝 Buat Laporan Sekarang' : '🔄 Tampilkan Semua Laporan'}
             </button>
           </div>
         ) : (
           <div className="service-grid-modern">
-            {filtered.map((report, idx) => (
+            {displayReports.map((report, idx) => (
               <button key={report.ticket} className={`service-card-detailed ${isLoaded ? `anim-fade-up delay-${Math.min(idx + 1, 6)}` : ''}`} onClick={() => setShowDetail(report)}>
                 <div className="service-card-detailed-icon" style={{ background: getStatusColor(report.status) + '20', color: getStatusColor(report.status) }}>
                   {report.status === 'Terkirim' && '📨'}
@@ -374,13 +387,13 @@ export default function RiwayatPage() {
       </section>
 
       {/* Report Count Summary */}
-      {reports.length > 0 && (
+      {sourceReports.length > 0 && (
         <section className="section">
           <div className="stats-grid">
-            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-1' : ''}`}><div className="stat-icon">📋</div><div className="stat-num">{reports.length}</div><div className="stat-label">Total</div></div>
-            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-2' : ''}`}><div className="stat-icon">📨</div><div className="stat-num">{reports.filter((r) => r.status === 'Terkirim').length}</div><div className="stat-label">Terkirim</div></div>
-            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-3' : ''}`}><div className="stat-icon">⏳</div><div className="stat-num">{reports.filter((r) => r.status === 'Diproses').length}</div><div className="stat-label">Diproses</div></div>
-            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-4' : ''}`}><div className="stat-icon">✅</div><div className="stat-num">{reports.filter((r) => r.status === 'Selesai').length}</div><div className="stat-label">Selesai</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-1' : ''}`}><div className="stat-icon">📋</div><div className="stat-num">{sourceReports.length}</div><div className="stat-label">{isAdmin() ? 'Total Sistem' : 'Total Anda'}</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-2' : ''}`}><div className="stat-icon">📨</div><div className="stat-num">{sourceReports.filter((r) => r.status === 'Terkirim').length}</div><div className="stat-label">Terkirim</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-3' : ''}`}><div className="stat-icon">⏳</div><div className="stat-num">{sourceReports.filter((r) => r.status === 'Diproses').length}</div><div className="stat-label">Diproses</div></div>
+            <div className={`stat-card ${isLoaded ? 'anim-scale-in delay-4' : ''}`}><div className="stat-icon">✅</div><div className="stat-num">{sourceReports.filter((r) => r.status === 'Selesai').length}</div><div className="stat-label">Selesai</div></div>
           </div>
         </section>
       )}

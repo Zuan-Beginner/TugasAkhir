@@ -21,6 +21,14 @@ export function saveReports(reports: Report[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
 }
 
+export function getReportsByUserId(userId: string): Report[] {
+  return getReports().filter(r => r.userId === userId);
+}
+
+export function getAllReports(): Report[] {
+  return getReports();
+}
+
 export function getAnnouncements(): Announcement[] {
   if (typeof window === 'undefined') return defaultAnnouncements;
   try {

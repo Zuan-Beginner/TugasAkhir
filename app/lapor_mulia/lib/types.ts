@@ -13,6 +13,7 @@ export type Report = {
   contact: string;
   status: ReportStatus;
   createdAt: string;
+  userId?: string;
 };
 
 export type ReportFormState = {

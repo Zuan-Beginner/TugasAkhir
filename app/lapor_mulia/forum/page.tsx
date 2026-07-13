@@ -102,6 +102,7 @@ export default function ForumPage() {
   const [filterMode, setFilterMode] = useState<'all' | 'reports' | 'mine' | 'starred' | 'pinned'>('all');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composeRef = useRef<HTMLDivElement>(null);
   const isLoaded = true;
 
   const user = authUser ? { name: authUser.name, avatar: authUser.avatar } : null;
@@ -134,6 +135,14 @@ export default function ForumPage() {
 
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function scrollToCompose() {
+    setTimeout(() => {
+      composeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const textarea = composeRef.current?.querySelector('textarea');
+      if (textarea) textarea.focus();
+    }, 100);
   }
 
   function handleSendMessage() {
@@ -967,7 +976,7 @@ export default function ForumPage() {
                       >
                         ❤️ {msg.likes > 0 && msg.likes}
                       </button>
-                      <button className="message-action-btn reply" onClick={() => setReplyTo(msg)}>
+                      <button className="message-action-btn reply" onClick={() => { setReplyTo(msg); scrollToCompose(); }}>
                         💬 Balas ({msg.replies.length})
                       </button>
                       {isAdmin() && (
@@ -1075,7 +1084,7 @@ export default function ForumPage() {
                     >
                       ❤️ {msg.likes > 0 && msg.likes}
                     </button>
-                    <button className="message-action-btn reply" onClick={() => setReplyTo(msg)}>
+                    <button className="message-action-btn reply" onClick={() => { setReplyTo(msg); scrollToCompose(); }}>
                       💬 Balas ({msg.replies.length})
                     </button>
                     {isMine && (
@@ -1188,7 +1197,7 @@ export default function ForumPage() {
         )}
 
         {/* Compose Box */}
-        <div className={`compose-box ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
+        <div ref={composeRef} className={`compose-box ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
           {replyTo && (
             <div className="reply-indicator">
               <span>💬 Membalas <strong>{replyTo.author}</strong>{replyTo.isReport ? ' (Laporan)' : ''}</span>

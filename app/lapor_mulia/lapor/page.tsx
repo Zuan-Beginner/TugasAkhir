@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getReports, saveReports, createTicketNumber, getDraft, saveDraft, clearDraft, createForumPostFromReport, getForumMessages, saveForumMessages } from '../lib/storage';
+import { getReports, getReportsByUserId, saveReports, createTicketNumber, getDraft, saveDraft, clearDraft, createForumPostFromReport, getForumMessages, saveForumMessages } from '../lib/storage';
 import { categories, priorities, initialForm } from '../lib/constants';
 import type { Report, ReportFormState } from '../lib/types';
 import { useAuth } from '../lib/auth-context';
@@ -31,17 +31,19 @@ export default function LaporPage() {
   const [submittedLocation, setSubmittedLocation] = useState('');
 
   useEffect(() => {
-    const all = getReports();
-    setRecentReports(all.slice(0, 3));
     const draft = getDraft();
     if (draft && isDraftWorthSaving(draft)) {
-      // Pulihkan draft, tapi minta pengguna mencentang ulang "Data benar".
       setFormData({ ...initialForm, ...draft, agree: false });
       setDraftRestored(true);
     }
     setDraftLoaded(true);
-    
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const userReportList = isAdmin() ? getReports() : getReportsByUserId(user.userId);
+    setRecentReports(userReportList.slice(0, 3));
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (formData.category) {
@@ -100,6 +102,7 @@ export default function LaporPage() {
       contact: isAdmin() ? 'Admin' : (user?.nim || 'Disembunyikan'),
       status: 'Terkirim',
       createdAt: new Date().toLocaleString('id-ID'),
+      userId: user?.userId,
     };
     const all = getReports();
     const next = [report, ...all];

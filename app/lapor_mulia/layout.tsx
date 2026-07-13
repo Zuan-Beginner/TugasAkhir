@@ -197,7 +197,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <div className="sidebar-brand">
             <div className="sidebar-brand-icon">🏫</div>
             <div className="sidebar-brand-text">
-              <h1>Mulia Lapor</h1>
+              <h1>LANTAS</h1>
               <small>Universitas Mulia</small>
             </div>
           </div>

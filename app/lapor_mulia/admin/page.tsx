@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { STORAGE_KEY, statuses } from '../lib/constants';
-import type { Report, ReportStatus } from '../lib/types';
+import type { Report, ReportStatus, ForumMessage, ForumReply } from '../lib/types';
 import { getForumMessages, saveForumMessages } from '../lib/storage';
+import { useAuth } from '../lib/auth-context';
 
 type FilterStatus = 'Semua' | ReportStatus;
 
@@ -34,6 +35,99 @@ export default function AdminPage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [activeTab, setActiveTab] = useState<'laporan' | 'forum'>('laporan');
+  const [forumMessages, setForumMessages] = useState<ForumMessage[]>([]);
+  const [newForumMsg, setNewForumMsg] = useState('');
+  const forumEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      if (isAdmin()) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+        router.push('/lapor_mulia');
+      }
+    }
+  }, [user, isAdmin, router]);
+
+  useEffect(() => {
+    if (isAuthorized === true) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          setReports(JSON.parse(saved));
+        } catch (e) {
+          console.error('Error loading reports:', e);
+        }
+      }
+    }
+  }, [isAuthorized]);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      setForumMessages(getForumMessages());
+      const interval = setInterval(() => setForumMessages(getForumMessages()), 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthorized]);
+
+  function sendForumMessage() {
+    if (!newForumMsg.trim() || !user) return;
+    const msg: ForumMessage = {
+      id: Date.now().toString(),
+      author: user.name,
+      avatar: user.avatar,
+      message: newForumMsg.trim(),
+      timestamp: new Date().toLocaleString('id-ID'),
+      likes: 0, likedBy: [], replies: [],
+    };
+    const updated = [msg, ...forumMessages];
+    saveForumMessages(updated);
+    setForumMessages(updated);
+    setNewForumMsg('');
+  }
+
+  function sendForumReply(messageId: string) {
+    if (!newForumMsg.trim() || !user) return;
+    const reply: ForumReply = {
+      id: Date.now().toString(),
+      author: user.name,
+      avatar: user.avatar,
+      message: newForumMsg.trim(),
+      timestamp: new Date().toLocaleString('id-ID'),
+      likes: 0, likedBy: [],
+    };
+    const updated = forumMessages.map(m => m.id === messageId ? { ...m, replies: [...m.replies, reply] } : m);
+    saveForumMessages(updated);
+    setForumMessages(updated);
+    setNewForumMsg('');
+  }
+
+  function deleteForumMessage(messageId: string) {
+    if (!confirm('Hapus pesan ini?')) return;
+    const updated = forumMessages.filter(m => m.id !== messageId);
+    saveForumMessages(updated);
+    setForumMessages(updated);
+  }
+
+  function togglePinForum(messageId: string) {
+    const updated = forumMessages.map(m => m.id === messageId ? { ...m, isPinned: !m.isPinned } : m);
+    saveForumMessages(updated);
+    setForumMessages(updated);
+  }
+
+  const sortedForum = useMemo(() => {
+    return [...forumMessages].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+  }, [forumMessages]);
+
+  const forumParticipants = useMemo(() => {
+    return [...new Set(forumMessages.map(m => m.author))];
+  }, [forumMessages]);
 
   const filteredReports = useMemo(() => {
     let result = reports;
@@ -1273,6 +1367,73 @@ export default function AdminPage() {
             </>
           )}
         </div>
+        </>
+        ) : (
+        /* ===== FORUM TAB ===== */
+        <div className="forum-admin">
+          <div className="forum-admin-header">
+            <h3>💬 Forum Diskusi</h3>
+            <div className="forum-admin-participants">
+              {forumParticipants.map(name => (
+                <span key={name} className="forum-admin-participant">👤 {name}</span>
+              ))}
+            </div>
+          </div>
+          <div className="forum-admin-messages">
+            {sortedForum.length === 0 ? (
+              <div style={{textAlign: 'center', padding: '40px 20px', color: 'var(--muted)'}}>
+                <div style={{fontSize: 48, marginBottom: 12}}>💬</div>
+                <p>Belum ada pesan di forum</p>
+              </div>
+            ) : sortedForum.map(msg => (
+              <div key={msg.id} className={`forum-admin-msg ${msg.isPinned ? 'pinned' : ''}`}>
+                <div className="forum-admin-msg-header">
+                  <div className="forum-admin-msg-author">
+                    <div className="forum-admin-msg-avatar">{msg.avatar}</div>
+                    <div>
+                      <div className="forum-admin-msg-name">{msg.author}</div>
+                      <div className="forum-admin-msg-time">{msg.timestamp}</div>
+                    </div>
+                  </div>
+                  {msg.isReport && <span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',padding:'3px 8px',borderRadius:8,fontWeight:700}}>📋 Laporan</span>}
+                  {msg.isPinned && <span style={{fontSize:11,background:'#FEF3C7',color:'#D97706',padding:'3px 8px',borderRadius:8,fontWeight:700}}>📌 Pinned</span>}
+                </div>
+                <div className="forum-admin-msg-text">{msg.message}</div>
+                <div className="forum-admin-msg-actions">
+                  <button className="forum-admin-msg-btn" onClick={() => togglePinForum(msg.id)}>📌 {msg.isPinned ? 'Unpin' : 'Pin'}</button>
+                  <button className="forum-admin-msg-btn delete" onClick={() => deleteForumMessage(msg.id)}>🗑️ Hapus</button>
+                  <span style={{fontSize:11, color:'var(--muted)'}}>❤️ {msg.likes} · 💬 {msg.replies.length}</span>
+                </div>
+                {msg.replies.length > 0 && (
+                  <div className="forum-admin-replies">
+                    {msg.replies.map(reply => (
+                      <div key={reply.id} className="forum-admin-reply">
+                        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                          <span style={{fontSize:14}}>{reply.avatar}</span>
+                          <strong style={{fontSize:12,color:'var(--primary)'}}>{reply.author}</strong>
+                          <span style={{fontSize:10,color:'var(--muted)'}}>{reply.timestamp}</span>
+                        </div>
+                        <div>{reply.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div ref={forumEndRef} />
+          </div>
+          <div className="forum-admin-compose">
+            <input
+              type="text"
+              placeholder="Tulis pesan ke forum..."
+              value={newForumMsg}
+              onChange={(e) => setNewForumMsg(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendForumMessage(); }}
+            />
+            <button onClick={sendForumMessage} disabled={!newForumMsg.trim()}>🚀 Kirim</button>
+          </div>
+        </div>
+        )}
 
         {/* Detail Modal */}
         {selectedReport && (
