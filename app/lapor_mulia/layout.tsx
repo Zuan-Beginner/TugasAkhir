@@ -163,7 +163,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               <div className="admin-brand">
                 <span className="admin-brand-icon">⚑</span>
                 <div className="admin-brand-text">
-                  <h1>LANTAS</h1>
+                  <h1>Mulia Lapor</h1>
                   <small>Panel Administrator</small>
                 </div>
               </div>

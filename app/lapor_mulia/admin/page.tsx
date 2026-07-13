@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { STORAGE_KEY, statuses } from '../lib/constants';
 import type { Report, ReportStatus, ForumMessage, ForumReply } from '../lib/types';
 import { getForumMessages, saveForumMessages } from '../lib/storage';
@@ -26,9 +25,6 @@ const statusColors: Record<ReportStatus, string> = {
 };
 
 export default function AdminPage() {
-  const router = useRouter();
-  const { user, isAdmin } = useAuth();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
@@ -549,29 +545,6 @@ export default function AdminPage() {
     setSelectedReport(null);
   }
 
-  if (isAuthorized === null) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
-          <h2 style={{ color: 'var(--primary)', marginBottom: '8px' }}>Memuat...</h2>
-        </div>
-      </div>
-    );
-  }
-
-  if (isAuthorized === false) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-          <h2 style={{ color: 'var(--primary)', marginBottom: '8px' }}>Akses Ditolak</h2>
-          <p style={{ color: 'var(--muted)' }}>Halaman ini hanya untuk administrator.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <style>{`
@@ -1030,38 +1003,6 @@ export default function AdminPage() {
         [data-theme="dark"] .page-input { background: var(--card); color: var(--text); border-color: var(--border); }
         [data-theme="dark"] .empty-state { color: var(--muted); }
         [data-theme="dark"] .empty-state-icon { opacity: 0.5; }
-
-        .admin-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
-        .admin-tab { padding: 12px 24px; border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-        .admin-tab:hover { border-color: var(--primary); transform: translateY(-2px); }
-        .admin-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .forum-admin { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
-        .forum-admin-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .forum-admin-header h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-        .forum-admin-participants { display: flex; gap: 6px; flex-wrap: wrap; }
-        .forum-admin-participant { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary-light); border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--primary); }
-        .forum-admin-messages { max-height: 500px; overflow-y: auto; padding: 16px 24px; }
-        .forum-admin-msg { padding: 14px; border-radius: 14px; background: var(--bg); margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        .forum-admin-msg.pinned { border-left-color: #f59e0b; background: #fffbeb; }
-        .forum-admin-msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .forum-admin-msg-author { display: flex; align-items: center; gap: 10px; }
-        .forum-admin-msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: grid; place-items: center; font-size: 18px; }
-        .forum-admin-msg-name { font-size: 14px; font-weight: 700; color: var(--text); }
-        .forum-admin-msg-time { font-size: 11px; color: var(--muted); }
-        .forum-admin-msg-text { font-size: 13px; line-height: 1.6; color: var(--text); margin-bottom: 10px; }
-        .forum-admin-msg-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .forum-admin-msg-btn { padding: 5px 10px; border: none; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; background: var(--card); color: var(--text); }
-        .forum-admin-msg-btn:hover { transform: scale(1.05); }
-        .forum-admin-msg-btn.pin { color: #f59e0b; }
-        .forum-admin-msg-btn.delete { color: var(--danger); }
-        .forum-admin-replies { margin-top: 10px; padding-left: 16px; border-left: 3px solid var(--primary); }
-        .forum-admin-reply { padding: 8px 12px; background: var(--card); border-radius: 10px; margin-bottom: 6px; font-size: 12px; }
-        .forum-admin-compose { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-        .forum-admin-compose input { flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 13px; outline: none; background: var(--bg); color: var(--text); transition: all 0.2s; }
-        .forum-admin-compose input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123,16,35,0.1); }
-        .forum-admin-compose button { padding: 12px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .forum-admin-compose button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(123,16,35,0.3); }
       `}</style>
 
       <div className="admin-page">
@@ -1097,18 +1038,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="admin-tabs">
-          <button className={`admin-tab ${activeTab === 'laporan' ? 'active' : ''}`} onClick={() => setActiveTab('laporan')}>
-            📊 Dashboard Laporan
-          </button>
-          <button className={`admin-tab ${activeTab === 'forum' ? 'active' : ''}`} onClick={() => setActiveTab('forum')}>
-            💬 Forum Diskusi ({forumMessages.length})
-          </button>
-        </div>
-
-        {activeTab === 'laporan' ? (
-          <>
         {/* Charts Row */}
         <div className="charts-row">
           {/* Chart Status */}
