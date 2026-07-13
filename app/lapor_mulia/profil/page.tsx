@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { getReports, saveReports } from '../lib/storage';
+import { getReports } from '../lib/storage';
 import { getStatusColor } from '../lib/constants';
 import { useAuth } from '../lib/auth-context';
 import type { Report } from '../lib/types';

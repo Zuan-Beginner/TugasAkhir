@@ -11,6 +11,7 @@ type AuthUser = {
   gender?: string;
   nim?: string;
   faculty?: string;
+  userId: string;
 };
 
 type AuthContextType = {
@@ -33,7 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem(AUTH_STORAGE_KEY);
       if (saved) {
         try {
-          setUser(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          if (!parsed.userId) {
+            parsed.userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+          }
+          setUser(parsed);
         } catch (e) {
           console.error('Failed to parse auth user:', e);
         }
@@ -43,7 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (name: string, role: UserRole, avatar: string, gender?: string, nim?: string, faculty?: string) => {
-    const newUser: AuthUser = { name, role, avatar, gender, nim, faculty };
+    const existingUser = user?.userId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newUser: AuthUser = { name, role, avatar, gender, nim, faculty, userId: existingUser };
     setUser(newUser);
     if (typeof window !== 'undefined') {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));

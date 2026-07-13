@@ -46,52 +46,13 @@ function getPriorityColor(priority?: string): string {
   }
 }
 
-// Anonimisasi Identitas
-const ANON_MAP_KEY = 'muliaForumAnonMap';
-
-function getAnonMap(): Record<string, number> {
-  if (typeof window === 'undefined') return {};
-  const data = localStorage.getItem(ANON_MAP_KEY);
-  return data ? JSON.parse(data) : {};
-}
-
-function saveAnonMap(map: Record<string, number>) {
-  localStorage.setItem(ANON_MAP_KEY, JSON.stringify(map));
-}
-
-function getAnonNumber(name: string): number {
-  const map = getAnonMap();
-  if (map[name] !== undefined) return map[name];
-
-  const existingNumbers = Object.values(map);
-  const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
-  const newNum = maxNum + 1;
-
-  map[name] = newNum;
-  saveAnonMap(map);
-  return newNum;
-}
-
 function createAnonUtils(isAdminUser: boolean) {
-  function getAnonName(name: string): string {
-    if (isAdminUser) return name;
-    if (!name || name === 'Anonim') return 'Anonim';
-    const num = getAnonNumber(name);
-    return `Mahasiswa ${num}`;
-  }
-
   function getDisplayName(name: string): { display: string; real?: string } {
-    if (isAdminUser) {
-      const anonName = getAnonName(name);
-      return {
-        display: name !== anonName ? `${name}` : name,
-        real: name !== anonName ? name : undefined
-      };
-    }
-    return { display: getAnonName(name) };
+    if (!name || name === 'Anonim') return { display: 'Anonim' };
+    return { display: name, real: name };
   }
 
-  return { getAnonName, getDisplayName };
+  return { getDisplayName };
 }
 
 export default function ForumPage() {
@@ -102,6 +63,7 @@ export default function ForumPage() {
   const [filterMode, setFilterMode] = useState<'all' | 'reports' | 'mine' | 'starred' | 'pinned'>('all');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composeRef = useRef<HTMLDivElement>(null);
   const isLoaded = true;
 
   const user = authUser ? { name: authUser.name, avatar: authUser.avatar } : null;
@@ -134,6 +96,14 @@ export default function ForumPage() {
 
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function scrollToCompose() {
+    setTimeout(() => {
+      composeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const textarea = composeRef.current?.querySelector('textarea');
+      if (textarea) textarea.focus();
+    }, 100);
   }
 
   function handleSendMessage() {
@@ -967,7 +937,7 @@ export default function ForumPage() {
                       >
                         ❤️ {msg.likes > 0 && msg.likes}
                       </button>
-                      <button className="message-action-btn reply" onClick={() => setReplyTo(msg)}>
+                      <button className="message-action-btn reply" onClick={() => { setReplyTo(msg); scrollToCompose(); }}>
                         💬 Balas ({msg.replies.length})
                       </button>
                       {isAdmin() && (
@@ -1075,7 +1045,7 @@ export default function ForumPage() {
                     >
                       ❤️ {msg.likes > 0 && msg.likes}
                     </button>
-                    <button className="message-action-btn reply" onClick={() => setReplyTo(msg)}>
+                    <button className="message-action-btn reply" onClick={() => { setReplyTo(msg); scrollToCompose(); }}>
                       💬 Balas ({msg.replies.length})
                     </button>
                     {isMine && (
@@ -1188,7 +1158,7 @@ export default function ForumPage() {
         )}
 
         {/* Compose Box */}
-        <div className={`compose-box ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
+        <div ref={composeRef} className={`compose-box ${isLoaded ? 'anim-slide-right delay-6' : ''}`}>
           {replyTo && (
             <div className="reply-indicator">
               <span>💬 Membalas <strong>{replyTo.author}</strong>{replyTo.isReport ? ' (Laporan)' : ''}</span>

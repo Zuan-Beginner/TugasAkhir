@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { STORAGE_KEY, statuses } from '../lib/constants';
-import type { Report, ReportStatus } from '../lib/types';
+import type { Report, ReportStatus, ForumMessage, ForumReply } from '../lib/types';
 import { getForumMessages, saveForumMessages } from '../lib/storage';
+import { useAuth } from '../lib/auth-context';
 
 type FilterStatus = 'Semua' | ReportStatus;
 
@@ -24,6 +26,9 @@ const statusColors: Record<ReportStatus, string> = {
 };
 
 export default function AdminPage() {
+  const router = useRouter();
+  const { user, isAdmin } = useAuth();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Semua');
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +39,99 @@ export default function AdminPage() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [activeTab, setActiveTab] = useState<'laporan' | 'forum'>('laporan');
+  const [forumMessages, setForumMessages] = useState<ForumMessage[]>([]);
+  const [newForumMsg, setNewForumMsg] = useState('');
+  const forumEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      if (isAdmin()) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+        router.push('/lapor_mulia');
+      }
+    }
+  }, [user, isAdmin, router]);
+
+  useEffect(() => {
+    if (isAuthorized === true) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          setReports(JSON.parse(saved));
+        } catch (e) {
+          console.error('Error loading reports:', e);
+        }
+      }
+    }
+  }, [isAuthorized]);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      setForumMessages(getForumMessages());
+      const interval = setInterval(() => setForumMessages(getForumMessages()), 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthorized]);
+
+  function sendForumMessage() {
+    if (!newForumMsg.trim() || !user) return;
+    const msg: ForumMessage = {
+      id: Date.now().toString(),
+      author: user.name,
+      avatar: user.avatar,
+      message: newForumMsg.trim(),
+      timestamp: new Date().toLocaleString('id-ID'),
+      likes: 0, likedBy: [], replies: [],
+    };
+    const updated = [msg, ...forumMessages];
+    saveForumMessages(updated);
+    setForumMessages(updated);
+    setNewForumMsg('');
+  }
+
+  function sendForumReply(messageId: string) {
+    if (!newForumMsg.trim() || !user) return;
+    const reply: ForumReply = {
+      id: Date.now().toString(),
+      author: user.name,
+      avatar: user.avatar,
+      message: newForumMsg.trim(),
+      timestamp: new Date().toLocaleString('id-ID'),
+      likes: 0, likedBy: [],
+    };
+    const updated = forumMessages.map(m => m.id === messageId ? { ...m, replies: [...m.replies, reply] } : m);
+    saveForumMessages(updated);
+    setForumMessages(updated);
+    setNewForumMsg('');
+  }
+
+  function deleteForumMessage(messageId: string) {
+    if (!confirm('Hapus pesan ini?')) return;
+    const updated = forumMessages.filter(m => m.id !== messageId);
+    saveForumMessages(updated);
+    setForumMessages(updated);
+  }
+
+  function togglePinForum(messageId: string) {
+    const updated = forumMessages.map(m => m.id === messageId ? { ...m, isPinned: !m.isPinned } : m);
+    saveForumMessages(updated);
+    setForumMessages(updated);
+  }
+
+  const sortedForum = useMemo(() => {
+    return [...forumMessages].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+  }, [forumMessages]);
+
+  const forumParticipants = useMemo(() => {
+    return [...new Set(forumMessages.map(m => m.author))];
+  }, [forumMessages]);
 
   const filteredReports = useMemo(() => {
     let result = reports;
@@ -449,6 +547,29 @@ export default function AdminPage() {
     saveForumMessages(updatedForum);
     setShowDeleteConfirm(null);
     setSelectedReport(null);
+  }
+
+  if (isAuthorized === null) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+          <h2 style={{ color: 'var(--primary)', marginBottom: '8px' }}>Memuat...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthorized === false) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+          <h2 style={{ color: 'var(--primary)', marginBottom: '8px' }}>Akses Ditolak</h2>
+          <p style={{ color: 'var(--muted)' }}>Halaman ini hanya untuk administrator.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -909,6 +1030,38 @@ export default function AdminPage() {
         [data-theme="dark"] .page-input { background: var(--card); color: var(--text); border-color: var(--border); }
         [data-theme="dark"] .empty-state { color: var(--muted); }
         [data-theme="dark"] .empty-state-icon { opacity: 0.5; }
+
+        .admin-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+        .admin-tab { padding: 12px 24px; border: 2px solid var(--border); background: var(--card); color: var(--text); border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .admin-tab:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .admin-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .forum-admin { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+        .forum-admin-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .forum-admin-header h3 { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .forum-admin-participants { display: flex; gap: 6px; flex-wrap: wrap; }
+        .forum-admin-participant { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary-light); border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--primary); }
+        .forum-admin-messages { max-height: 500px; overflow-y: auto; padding: 16px 24px; }
+        .forum-admin-msg { padding: 14px; border-radius: 14px; background: var(--bg); margin-bottom: 10px; border-left: 4px solid var(--primary); }
+        .forum-admin-msg.pinned { border-left-color: #f59e0b; background: #fffbeb; }
+        .forum-admin-msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .forum-admin-msg-author { display: flex; align-items: center; gap: 10px; }
+        .forum-admin-msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: grid; place-items: center; font-size: 18px; }
+        .forum-admin-msg-name { font-size: 14px; font-weight: 700; color: var(--text); }
+        .forum-admin-msg-time { font-size: 11px; color: var(--muted); }
+        .forum-admin-msg-text { font-size: 13px; line-height: 1.6; color: var(--text); margin-bottom: 10px; }
+        .forum-admin-msg-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .forum-admin-msg-btn { padding: 5px 10px; border: none; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; background: var(--card); color: var(--text); }
+        .forum-admin-msg-btn:hover { transform: scale(1.05); }
+        .forum-admin-msg-btn.pin { color: #f59e0b; }
+        .forum-admin-msg-btn.delete { color: var(--danger); }
+        .forum-admin-replies { margin-top: 10px; padding-left: 16px; border-left: 3px solid var(--primary); }
+        .forum-admin-reply { padding: 8px 12px; background: var(--card); border-radius: 10px; margin-bottom: 6px; font-size: 12px; }
+        .forum-admin-compose { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .forum-admin-compose input { flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 13px; outline: none; background: var(--bg); color: var(--text); transition: all 0.2s; }
+        .forum-admin-compose input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(123,16,35,0.1); }
+        .forum-admin-compose button { padding: 12px 20px; border: none; border-radius: 12px; background: var(--primary); color: white; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .forum-admin-compose button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(123,16,35,0.3); }
       `}</style>
 
       <div className="admin-page">
@@ -944,6 +1097,18 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="admin-tabs">
+          <button className={`admin-tab ${activeTab === 'laporan' ? 'active' : ''}`} onClick={() => setActiveTab('laporan')}>
+            📊 Dashboard Laporan
+          </button>
+          <button className={`admin-tab ${activeTab === 'forum' ? 'active' : ''}`} onClick={() => setActiveTab('forum')}>
+            💬 Forum Diskusi ({forumMessages.length})
+          </button>
+        </div>
+
+        {activeTab === 'laporan' ? (
+          <>
         {/* Charts Row */}
         <div className="charts-row">
           {/* Chart Status */}
@@ -1273,6 +1438,73 @@ export default function AdminPage() {
             </>
           )}
         </div>
+        </>
+        ) : (
+        /* ===== FORUM TAB ===== */
+        <div className="forum-admin">
+          <div className="forum-admin-header">
+            <h3>💬 Forum Diskusi</h3>
+            <div className="forum-admin-participants">
+              {forumParticipants.map(name => (
+                <span key={name} className="forum-admin-participant">👤 {name}</span>
+              ))}
+            </div>
+          </div>
+          <div className="forum-admin-messages">
+            {sortedForum.length === 0 ? (
+              <div style={{textAlign: 'center', padding: '40px 20px', color: 'var(--muted)'}}>
+                <div style={{fontSize: 48, marginBottom: 12}}>💬</div>
+                <p>Belum ada pesan di forum</p>
+              </div>
+            ) : sortedForum.map(msg => (
+              <div key={msg.id} className={`forum-admin-msg ${msg.isPinned ? 'pinned' : ''}`}>
+                <div className="forum-admin-msg-header">
+                  <div className="forum-admin-msg-author">
+                    <div className="forum-admin-msg-avatar">{msg.avatar}</div>
+                    <div>
+                      <div className="forum-admin-msg-name">{msg.author}</div>
+                      <div className="forum-admin-msg-time">{msg.timestamp}</div>
+                    </div>
+                  </div>
+                  {msg.isReport && <span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',padding:'3px 8px',borderRadius:8,fontWeight:700}}>📋 Laporan</span>}
+                  {msg.isPinned && <span style={{fontSize:11,background:'#FEF3C7',color:'#D97706',padding:'3px 8px',borderRadius:8,fontWeight:700}}>📌 Pinned</span>}
+                </div>
+                <div className="forum-admin-msg-text">{msg.message}</div>
+                <div className="forum-admin-msg-actions">
+                  <button className="forum-admin-msg-btn" onClick={() => togglePinForum(msg.id)}>📌 {msg.isPinned ? 'Unpin' : 'Pin'}</button>
+                  <button className="forum-admin-msg-btn delete" onClick={() => deleteForumMessage(msg.id)}>🗑️ Hapus</button>
+                  <span style={{fontSize:11, color:'var(--muted)'}}>❤️ {msg.likes} · 💬 {msg.replies.length}</span>
+                </div>
+                {msg.replies.length > 0 && (
+                  <div className="forum-admin-replies">
+                    {msg.replies.map(reply => (
+                      <div key={reply.id} className="forum-admin-reply">
+                        <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+                          <span style={{fontSize:14}}>{reply.avatar}</span>
+                          <strong style={{fontSize:12,color:'var(--primary)'}}>{reply.author}</strong>
+                          <span style={{fontSize:10,color:'var(--muted)'}}>{reply.timestamp}</span>
+                        </div>
+                        <div>{reply.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div ref={forumEndRef} />
+          </div>
+          <div className="forum-admin-compose">
+            <input
+              type="text"
+              placeholder="Tulis pesan ke forum..."
+              value={newForumMsg}
+              onChange={(e) => setNewForumMsg(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendForumMessage(); }}
+            />
+            <button onClick={sendForumMessage} disabled={!newForumMsg.trim()}>🚀 Kirim</button>
+          </div>
+        </div>
+        )}
 
         {/* Detail Modal */}
         {selectedReport && (

@@ -64,11 +64,6 @@ export default function LoginPage() {
           from { opacity: 0; transform: translateY(32px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-<<<<<<< HEAD
-=======
-          to { opacity: 1; transform: translateY(0); }
-        }
->>>>>>> 28cf1dbfc8506dadfd2e8a1e5984d8a5720a8f1d
         .login-box {
           background: white;
           border-radius: 24px;
@@ -226,8 +221,8 @@ export default function LoginPage() {
       <div className="login-page-wrapper">
         <div className="login-box">
           <div className="login-logo">🏛️</div>
-          <h1 className="login-title">Mulia Lapor</h1>
-          <p className="login-subtitle">Sistem Pengaduan & Layanan Kampus Terpadu</p>
+          <h1 className="login-title">LANTAS</h1>
+          <p className="login-subtitle">Lapor dan Atasi — Universitas Mulia</p>
 
           <div className="role-selector">
             <div
